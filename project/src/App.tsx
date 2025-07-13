@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Camera, Save, Printer, Link } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { exportSimple, exportModern, exportWebStyle, exportSimpleWeb, ExportOptions } from './exports';
+import { downloadFile, openFileInNewTab } from './exports/utils';
 
 // Composant pour l'upload d'images et documents
 const ImageUploadZone = ({ label }: { label: string }) => {
@@ -760,6 +762,90 @@ function App() {
     }
   };
 
+  // New export functions using the integrated Python scripts
+  const exportOptions: ExportOptions = {
+    theme,
+    pageTitle
+  };
+
+  const exportSimplePDF = async () => {
+    try {
+      const result = exportSimple.pdf(sheet, exportOptions);
+      if (result.success && result.data) {
+        downloadFile(result.data, result.filename!);
+        alert('Fichier PDF simple généré avec succès !');
+      } else {
+        alert(result.error || 'Erreur lors de la génération du PDF');
+      }
+    } catch (error) {
+      console.error('Error exporting simple PDF:', error);
+      alert('Une erreur est survenue lors de la génération du PDF simple.');
+    }
+  };
+
+  const exportSimpleDOCX = async () => {
+    try {
+      const result = await exportSimple.docx(sheet, exportOptions);
+      if (result.success && result.data) {
+        downloadFile(result.data, result.filename!);
+        alert('Fichier DOCX simple généré avec succès !');
+      } else {
+        alert(result.error || 'Erreur lors de la génération du DOCX');
+      }
+    } catch (error) {
+      console.error('Error exporting simple DOCX:', error);
+      alert('Une erreur est survenue lors de la génération du DOCX simple.');
+    }
+  };
+
+  const exportModernHTML = () => {
+    try {
+      const result = exportModern.html(sheet, exportOptions);
+      if (result.success && result.data) {
+        downloadFile(result.data, result.filename!);
+        openFileInNewTab(result.data);
+        alert('Fichier HTML moderne généré avec succès !');
+      } else {
+        alert(result.error || 'Erreur lors de la génération du HTML moderne');
+      }
+    } catch (error) {
+      console.error('Error exporting modern HTML:', error);
+      alert('Une erreur est survenue lors de la génération du HTML moderne.');
+    }
+  };
+
+  const exportWebStyleHTML = () => {
+    try {
+      const result = exportWebStyle.html(sheet, exportOptions);
+      if (result.success && result.data) {
+        downloadFile(result.data, result.filename!);
+        openFileInNewTab(result.data);
+        alert('Fichier HTML web généré avec succès !');
+      } else {
+        alert(result.error || 'Erreur lors de la génération du HTML web');
+      }
+    } catch (error) {
+      console.error('Error exporting web-style HTML:', error);
+      alert('Une erreur est survenue lors de la génération du HTML web.');
+    }
+  };
+
+  const exportSimpleWebHTML = () => {
+    try {
+      const result = exportSimpleWeb.html(sheet, exportOptions);
+      if (result.success && result.data) {
+        downloadFile(result.data, result.filename!);
+        openFileInNewTab(result.data);
+        alert('Fichier HTML simple généré avec succès !');
+      } else {
+        alert(result.error || 'Erreur lors de la génération du HTML simple');
+      }
+    } catch (error) {
+      console.error('Error exporting simple web HTML:', error);
+      alert('Une erreur est survenue lors de la génération du HTML simple.');
+    }
+  };
+
   return (
     <div 
       className="min-h-screen font-serif transition-all duration-300"
@@ -848,25 +934,64 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="py-1">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Export Standard
+                  </div>
                   <button
                     onClick={exportToPDF}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
-                    📄 Exporter en PDF
+                    📄 Exporter en PDF (Standard)
                   </button>
                   <button
                     onClick={exportToWord}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
-                    📝 Exporter en DOCX
+                    📝 Exporter en DOCX (Standard)
                   </button>
                   <button
                     onClick={exportData}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     💾 Exporter en JSON
+                  </button>
+                  
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Export Templates Python
+                  </div>
+                  <button
+                    onClick={exportSimplePDF}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    📄 PDF Simple (Python)
+                  </button>
+                  <button
+                    onClick={exportSimpleDOCX}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    📝 DOCX Simple (Python)
+                  </button>
+                  <button
+                    onClick={exportModernHTML}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🌐 HTML Moderne (Python)
+                  </button>
+                  <button
+                    onClick={exportWebStyleHTML}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🎨 HTML Web Style (Python)
+                  </button>
+                  <button
+                    onClick={exportSimpleWebHTML}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🌍 HTML Simple Web (Python)
                   </button>
                 </div>
               </div>
