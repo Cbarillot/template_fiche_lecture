@@ -16,6 +16,12 @@ def creer_pdf(data, output_path):
         # En-tête
         pdf.set_font('Arial', 'B', 16)
         pdf.cell(0, 10, 'Fiche de Lecture', 0, 1, 'C')
+        
+        # Sous-titre avec le titre de l'œuvre
+        if data.get('titre'):
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, data['titre'], 0, 1, 'C')
+        
         pdf.ln(10)
         
         # Police normale
@@ -60,6 +66,11 @@ def creer_docx(data, output_path):
         
         # Titre
         doc.add_heading('Fiche de Lecture', 0)
+        
+        # Sous-titre avec le titre de l'œuvre
+        if data.get('titre'):
+            doc.add_heading(data['titre'], level=1)
+        
         doc.add_paragraph()
         
         # Contenu

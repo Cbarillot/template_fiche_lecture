@@ -1,2 +1,28 @@
 node_modules/
 .env
+
+# Test files
+test_fiche.json
+
+# Export folder
+exports/
+
+# Build artifacts
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log

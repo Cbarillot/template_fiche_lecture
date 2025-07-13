@@ -333,7 +333,6 @@ const themes = {
 function App() {
   const [currentTheme, setCurrentTheme] = useState<keyof typeof themes>('purple');
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
-  const [pageTitle, setPageTitle] = useState('Fiche de lecture');
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
     auteur: '',
@@ -375,22 +374,11 @@ function App() {
     if (saved) {
       setSheet(JSON.parse(saved));
     }
-    
-    // Load pageTitle from localStorage
-    const savedTitle = localStorage.getItem('pageTitle');
-    if (savedTitle) {
-      setPageTitle(savedTitle);
-    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('ficheAnalyse', JSON.stringify(sheet));
   }, [sheet]);
-
-  // Save pageTitle to localStorage
-  useEffect(() => {
-    localStorage.setItem('pageTitle', pageTitle);
-  }, [pageTitle]);
 
   const updateField = (field: keyof ReadingSheet, value: string) => {
     setSheet(prev => ({ ...prev, [field]: value }));
@@ -469,7 +457,7 @@ function App() {
           Fiche de Lecture
         </h1>
         <div style="font-size: 18pt; color: ${theme.text}; margin: 0; font-weight: normal;">
-          ${pageTitle || 'Sans titre'}
+          ${sheet.titre || 'Sans titre'}
         </div>
         ${sheet.auteur ? `<div style="color: #666; font-size: 0.9em; margin-top: 5px;">${sheet.auteur}</div>` : ''}
       `;
@@ -607,7 +595,7 @@ function App() {
       }
 
       // Télécharger le PDF avec un nom de fichier personnalisé
-      const fileName = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.pdf`;
+      const fileName = `fiche-lecture-${sheet.titre ? sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.pdf`;
       pdf.save(fileName);
       
       // Nettoyer
@@ -697,7 +685,7 @@ function App() {
         <html>
         <head>
           <meta charset="UTF-8">
-          <title>Fiche de Lecture - ${pageTitle || 'Sans titre'}</title>
+          <title>Fiche de Lecture - ${sheet.titre || 'Sans titre'}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { color: #667eea; text-align: center; }
@@ -711,7 +699,7 @@ function App() {
         </head>
         <body>
           <h1>📖 Fiche de Lecture</h1>
-          <h2 style="text-align: center; margin-bottom: 30px;">${pageTitle || 'Sans titre'}</h2>
+          <h2 style="text-align: center; margin-bottom: 30px;">${sheet.titre || 'Sans titre'}</h2>
           ${sheet.auteur ? `<p style="text-align: center; font-style: italic; margin-bottom: 30px;">${sheet.auteur}</p>` : ''}
           
           <div class="section">
@@ -757,7 +745,7 @@ function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.html`;
+      link.download = `fiche-lecture-${sheet.titre ? sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.html`;
       
       document.body.appendChild(link);
       link.click();
@@ -778,7 +766,7 @@ function App() {
     try {
       const exportOptions: ExportOptions = {
         theme,
-        pageTitle
+        pageTitle: sheet.titre
       };
       const result = exportSimple.pdf(sheet, exportOptions);
       if (result.success && result.data) {
@@ -797,7 +785,7 @@ function App() {
     try {
       const exportOptions: ExportOptions = {
         theme,
-        pageTitle
+        pageTitle: sheet.titre
       };
       const result = await exportSimple.docx(sheet, exportOptions);
       if (result.success && result.data) {
@@ -816,7 +804,7 @@ function App() {
     try {
       const exportOptions: ExportOptions = {
         theme,
-        pageTitle
+        pageTitle: sheet.titre
       };
       const result = exportModern.html(sheet, exportOptions);
       if (result.success && result.data) {
@@ -836,7 +824,7 @@ function App() {
     try {
       const exportOptions: ExportOptions = {
         theme,
-        pageTitle
+        pageTitle: sheet.titre
       };
       const result = exportWebStyle.html(sheet, exportOptions);
       if (result.success && result.data) {
@@ -856,7 +844,7 @@ function App() {
     try {
       const exportOptions: ExportOptions = {
         theme,
-        pageTitle
+        pageTitle: sheet.titre
       };
       const result = exportSimpleWeb.html(sheet, exportOptions);
       if (result.success && result.data) {
@@ -936,14 +924,9 @@ function App() {
           <h1 className="text-4xl font-bold mb-2 relative z-10">
               📖 Fiche de Lecture
             </h1>
-            <input
-              type="text"
-              value={pageTitle}
-              onChange={(e) => setPageTitle(e.target.value)}
-              className="text-xl bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none w-full max-w-2xl text-center"
-              style={{ color: theme.text }}
-              placeholder="Titre de votre fiche de lecture"
-            />
+            <h2 className="text-2xl font-normal relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              {sheet.titre || 'Titre de l\'œuvre à saisir'}
+            </h2>
         </div>
 
         {/* Content */}

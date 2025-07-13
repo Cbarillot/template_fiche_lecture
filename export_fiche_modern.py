@@ -276,8 +276,8 @@ def generate_html(data):
         <div class="container">
             <div class="header-content">
                 <div class="header-text">
-                    <h1>{titre}</h1>
-                    <p>Une analyse complète de l'œuvre</p>
+                    <h1>📖 Fiche de Lecture</h1>
+                    <p>{titre}</p>
                 </div>
                 <div class="meta">
                     <i class="fas fa-user-edit"></i> {auteur} • 

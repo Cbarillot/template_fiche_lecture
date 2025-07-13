@@ -30,6 +30,12 @@ def generate_html(data):
             margin-bottom: 30px;
         }
         h1 { margin: 0; font-size: 28px; }
+        .header h2 {
+            margin: 10px 0 0 0;
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            border-bottom: none;
+        }
         .section {
             background: white;
             border-radius: 5px;
@@ -56,7 +62,8 @@ def generate_html(data):
         "</head>",
         "<body>",
         "    <div class='header'>",
-        "        <h1>Fiche de Lecture</h1>",
+        "        <h1>📖 Fiche de Lecture</h1>",
+        f"        <h2>{titre}</h2>",
         f"        <p>Générée le {date_str}</p>",
         "    </div>"
     ]
