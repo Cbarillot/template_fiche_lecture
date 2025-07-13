@@ -31,6 +31,9 @@ set NODE_MIN_VERSION=16
 set BROWSER_DELAY=3
 set LOG_FILE=launcher.log
 
+REM Sauvegarder le répertoire de départ AVANT toute opération
+set ORIGINAL_DIR=%CD%
+
 REM Créer le fichier de log avec timestamp
 echo [%date% %time%] Launcher démarré > "%LOG_FILE%"
 
@@ -49,9 +52,6 @@ call :check_port_available
 REM Démarrage rapide
 echo [INFO] Démarrage en cours...
 cd /d "%PROJECT_DIR%"
-
-REM Sauvegarde du répertoire de travail
-set ORIGINAL_DIR=%CD%
 
 REM Installation/mise à jour des dépendances en arrière-plan si nécessaire
 if not exist "node_modules" (
@@ -199,7 +199,7 @@ if %errorlevel% neq 0 (
 goto :eof
 
 :check_project_dir
-if not exist "%PROJECT_DIR%" (
+if not exist "%ORIGINAL_DIR%\%PROJECT_DIR%" (
     echo [ERREUR] Le dossier '%PROJECT_DIR%' n'existe pas
     echo.
     echo Solutions:
@@ -207,9 +207,9 @@ if not exist "%PROJECT_DIR%" (
     echo 2. Créez le dossier manuellement
     echo 3. Ou modifiez la variable PROJECT_DIR dans ce script
     echo.
-    echo Répertoire actuel: %CD%
+    echo Répertoire actuel: %ORIGINAL_DIR%
     echo Dossiers disponibles:
-    dir /ad /b 2>nul
+    dir /ad /b "%ORIGINAL_DIR%" 2>nul
     echo.
     pause
     exit /b 1
