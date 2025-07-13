@@ -774,13 +774,12 @@ function App() {
   };
 
   // New export functions using the integrated Python scripts
-  const exportOptions: ExportOptions = {
-    theme,
-    pageTitle
-  };
-
   const exportSimplePDF = async () => {
     try {
+      const exportOptions: ExportOptions = {
+        theme,
+        pageTitle
+      };
       const result = exportSimple.pdf(sheet, exportOptions);
       if (result.success && result.data) {
         downloadFile(result.data, result.filename!);
@@ -796,6 +795,10 @@ function App() {
 
   const exportSimpleDOCX = async () => {
     try {
+      const exportOptions: ExportOptions = {
+        theme,
+        pageTitle
+      };
       const result = await exportSimple.docx(sheet, exportOptions);
       if (result.success && result.data) {
         downloadFile(result.data, result.filename!);
@@ -811,6 +814,10 @@ function App() {
 
   const exportModernHTML = () => {
     try {
+      const exportOptions: ExportOptions = {
+        theme,
+        pageTitle
+      };
       const result = exportModern.html(sheet, exportOptions);
       if (result.success && result.data) {
         downloadFile(result.data, result.filename!);
@@ -827,6 +834,10 @@ function App() {
 
   const exportWebStyleHTML = () => {
     try {
+      const exportOptions: ExportOptions = {
+        theme,
+        pageTitle
+      };
       const result = exportWebStyle.html(sheet, exportOptions);
       if (result.success && result.data) {
         downloadFile(result.data, result.filename!);
@@ -843,6 +854,10 @@ function App() {
 
   const exportSimpleWebHTML = () => {
     try {
+      const exportOptions: ExportOptions = {
+        theme,
+        pageTitle
+      };
       const result = exportSimpleWeb.html(sheet, exportOptions);
       if (result.success && result.data) {
         downloadFile(result.data, result.filename!);

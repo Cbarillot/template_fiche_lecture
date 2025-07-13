@@ -3,7 +3,7 @@ import { ReadingSheet, ExportOptions, ExportResult } from './types';
 // Generate web-style HTML (similar to Python webstyle version)
 export const generateHTML = (data: ReadingSheet, options: ExportOptions = {}): ExportResult => {
   try {
-    const titre = data.titre || 'Sans titre';
+    const titre = options.pageTitle || 'Sans titre';
     const dateStr = new Date().toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
