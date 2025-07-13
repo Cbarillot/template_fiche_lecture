@@ -95,13 +95,8 @@ if %errorlevel% neq 0 (
 )
 
 REM Ouverture automatique du navigateur après un délai
-echo [INFO] Ouverture sur Google Chrome dans %BROWSER_DELAY% secondes...
-REM Créer un script temporaire pour ouvrir Chrome
-echo @echo off > "%TEMP%\open_chrome.bat"
-echo timeout /t %BROWSER_DELAY% ^>nul >> "%TEMP%\open_chrome.bat"
-echo start chrome.exe --new-window http://localhost:%DEFAULT_PORT% >> "%TEMP%\open_chrome.bat"
-echo del "%TEMP%\open_chrome.bat" >> "%TEMP%\open_chrome.bat"
-start /min "%TEMP%\open_chrome.bat"
+echo [INFO] Ouverture du navigateur dans %BROWSER_DELAY% secondes...
+start /b cmd /c "timeout /t %BROWSER_DELAY% >nul 2>&1 & call :open_browser_now"
 
 echo.
 echo ==========================================
@@ -215,5 +210,22 @@ if not exist "%ORIGINAL_DIR%\%PROJECT_DIR%" (
     exit /b 1
 ) else (
     echo [OK] Dossier projet trouvé
+)
+goto :eof
+
+:open_browser_now
+REM Essayer différents navigateurs dans l'ordre de préférence
+start "" "http://localhost:%DEFAULT_PORT%" 2>nul
+if %errorlevel% neq 0 (
+    REM Si échec, essayer Chrome explicitement
+    start "" "chrome.exe" "http://localhost:%DEFAULT_PORT%" 2>nul
+    if %errorlevel% neq 0 (
+        REM Si Chrome n'est pas trouvé, essayer Edge
+        start "" "msedge.exe" "http://localhost:%DEFAULT_PORT%" 2>nul
+        if %errorlevel% neq 0 (
+            REM En dernier recours, utiliser rundll32
+            rundll32 url.dll,FileProtocolHandler "http://localhost:%DEFAULT_PORT%"
+        )
+    )
 )
 goto :eof
