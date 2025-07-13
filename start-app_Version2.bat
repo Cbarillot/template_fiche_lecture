@@ -96,7 +96,7 @@ if %errorlevel% neq 0 (
 
 REM Ouverture automatique du navigateur après un délai
 echo [INFO] Ouverture du navigateur dans %BROWSER_DELAY% secondes...
-start /b cmd /c "timeout /t %BROWSER_DELAY% >nul 2>&1 & call :open_browser_now"
+powershell -Command "Start-Sleep %BROWSER_DELAY%; Start-Process 'http://localhost:%DEFAULT_PORT%'" >nul 2>&1 &
 
 echo.
 echo ==========================================
