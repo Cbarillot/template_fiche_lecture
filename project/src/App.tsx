@@ -678,226 +678,85 @@ function App() {
 
   const exportToWord = async () => {
     try {
-      // Créer un nouveau document Word
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
+      // Create a simple HTML structure for Word export
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Fiche de Lecture - ${pageTitle || 'Sans titre'}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #667eea; text-align: center; }
+            h2 { color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 5px; }
+            .section { margin-bottom: 20px; }
+            .field { margin-bottom: 10px; }
+            .label { font-weight: bold; color: #333; }
+            .content { margin-left: 10px; }
+            .citation { border-left: 3px solid #667eea; padding-left: 10px; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>📖 Fiche de Lecture</h1>
+          <h2 style="text-align: center; margin-bottom: 30px;">${pageTitle || 'Sans titre'}</h2>
+          ${sheet.auteur ? `<p style="text-align: center; font-style: italic; margin-bottom: 30px;">${sheet.auteur}</p>` : ''}
+          
+          <div class="section">
+            <h2>📘 Résumé & Architecture</h2>
+            ${sheet.titre ? `<div class="field"><span class="label">Titre:</span> <span class="content">${sheet.titre}</span></div>` : ''}
+            ${sheet.resume ? `<div class="field"><span class="label">Résumé:</span><div class="content">${sheet.resume}</div></div>` : ''}
+            ${sheet.plan ? `<div class="field"><span class="label">Plan narratif:</span><div class="content">${sheet.plan}</div></div>` : ''}
+            ${sheet.personnages ? `<div class="field"><span class="label">Personnages:</span><div class="content">${sheet.personnages}</div></div>` : ''}
+          </div>
+          
+          ${sheet.citations && sheet.citations.some(c => c.text) ? `
+          <div class="section">
+            <h2>📝 Citations clés</h2>
+            ${sheet.citations.filter(c => c.text).map(citation => `
+              <div class="citation">
+                <em>"${citation.text}"</em>
+                ${citation.page ? ` <small>(p. ${citation.page})</small>` : ''}
+              </div>
+            `).join('')}
+          </div>` : ''}
+          
+          ${sheet.axes ? `
+          <div class="section">
+            <h2>🧠 Axes critiques</h2>
+            <div class="content">${sheet.axes}</div>
+          </div>` : ''}
+          
+          ${sheet.notes ? `
+          <div class="section">
+            <h2>📝 Notes</h2>
+            <div class="content">${sheet.notes}</div>
+          </div>` : ''}
+          
+          <div style="margin-top: 40px; text-align: center; color: #666; font-size: 12px;">
+            Généré le ${new Date().toLocaleDateString('fr-FR')} par l'application Fiche de Lecture
+          </div>
+        </body>
+        </html>
+      `;
       
-      // Créer le document
-      const doc = new Document({
-        sections: [
-          {
-            properties: {},
-            children: [
-              // Titre principal
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: 'Fiche de Lecture',
-                    bold: true,
-                    size: 32,
-                    color: theme.primary.replace('#', ''),
-                  }),
-                ],
-                heading: HeadingLevel.TITLE,
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 400 },
-              }),
-              
-              // Titre et auteur
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: pageTitle || 'Sans titre',
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 200 },
-              }),
-              
-              ...(sheet.auteur ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: sheet.auteur,
-                      italics: true,
-                      size: 20,
-                    }),
-                  ],
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 400 },
-                }),
-              ] : []),
-              
-              // Sections du contenu
-              ...(sheet.resume ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: 'Résumé détaillé',
-                      bold: true,
-                      size: 20,
-                    }),
-                  ],
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 200, after: 200 },
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: sheet.resume,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 200 },
-                }),
-              ] : []),
-              
-              ...(sheet.plan ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: 'Plan narratif / Architecture',
-                      bold: true,
-                      size: 20,
-                    }),
-                  ],
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 200, after: 200 },
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: sheet.plan,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 200 },
-                }),
-              ] : []),
-              
-              ...(sheet.personnages ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: 'Système des personnages',
-                      bold: true,
-                      size: 20,
-                    }),
-                  ],
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 200, after: 200 },
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: sheet.personnages,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 200 },
-                }),
-              ] : []),
-              
-              // Citations
-              ...(sheet.citations && sheet.citations.some(c => c.text) ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: 'Citations clés',
-                      bold: true,
-                      size: 20,
-                    }),
-                  ],
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 200, after: 200 },
-                }),
-                ...sheet.citations.filter(c => c.text).map(citation => 
-                  new Paragraph({
-                    children: [
-                      new TextRun({
-                        text: `"${citation.text}"`,
-                        italics: true,
-                        size: 22,
-                      }),
-                      new TextRun({
-                        text: citation.page ? ` (p. ${citation.page})` : '',
-                        size: 20,
-                      }),
-                    ],
-                    spacing: { after: 100 },
-                  })
-                ),
-              ] : []),
-              
-              ...(sheet.axes ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: 'Axes critiques principaux',
-                      bold: true,
-                      size: 20,
-                    }),
-                  ],
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 200, after: 200 },
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: sheet.axes,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 200 },
-                }),
-              ] : []),
-              
-              ...(sheet.notes ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: 'Notes ou remarques libres',
-                      bold: true,
-                      size: 20,
-                    }),
-                  ],
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 200, after: 200 },
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: sheet.notes,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 200 },
-                }),
-              ] : []),
-            ],
-          },
-        ],
-      });
-      
-      // Générer le fichier
-      const buffer = await Packer.toBuffer(doc);
-      
-      // Créer un blob et télécharger
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      // Create a blob with HTML content
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.docx`;
+      link.download = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.html`;
       
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
+      // Show success message
+      alert('Fichier HTML généré avec succès ! Vous pouvez l\'ouvrir dans Word ou tout autre traitement de texte.');
+      
     } catch (error) {
       console.error('Erreur lors de la génération du document Word:', error);
-      alert('Une erreur est survenue lors de la génération du document Word. Vérifiez que la librairie docx est installée.');
+      alert('Une erreur est survenue lors de la génération du document Word.');
     }
   };
 
