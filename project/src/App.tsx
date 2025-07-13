@@ -333,7 +333,7 @@ const themes = {
 function App() {
   const [currentTheme, setCurrentTheme] = useState<keyof typeof themes>('purple');
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
-  const [pageTitle, setPageTitle] = useState('Mon Document de Travail');
+  const [pageTitle, setPageTitle] = useState('Fiche de lecture');
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
     auteur: '',
@@ -375,11 +375,22 @@ function App() {
     if (saved) {
       setSheet(JSON.parse(saved));
     }
+    
+    // Load pageTitle from localStorage
+    const savedTitle = localStorage.getItem('pageTitle');
+    if (savedTitle) {
+      setPageTitle(savedTitle);
+    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('ficheAnalyse', JSON.stringify(sheet));
   }, [sheet]);
+
+  // Save pageTitle to localStorage
+  useEffect(() => {
+    localStorage.setItem('pageTitle', pageTitle);
+  }, [pageTitle]);
 
   const updateField = (field: keyof ReadingSheet, value: string) => {
     setSheet(prev => ({ ...prev, [field]: value }));
@@ -916,7 +927,7 @@ function App() {
               onChange={(e) => setPageTitle(e.target.value)}
               className="text-xl bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none w-full max-w-2xl text-center"
               style={{ color: theme.text }}
-              placeholder="Titre du document"
+              placeholder="Titre de votre fiche de lecture"
             />
         </div>
 
