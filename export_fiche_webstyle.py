@@ -47,6 +47,13 @@ def generate_html(data):
             font-weight: 500;
         }
         
+        .header h2 {
+            margin: 10px 0 0 0;
+            font-size: 20px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
         .section {
             background: white;
             border-radius: 5px;
@@ -108,6 +115,7 @@ def generate_html(data):
     <body>
         <div class="header">
             <h1>Fiche de Lecture</h1>
+            <h2>{titre}</h2>
             <p>Générée le {date_str}</p>
         </div>
     """.format(css_style=css_style, titre=titre, date_str=date_str)
