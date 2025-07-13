@@ -78,7 +78,7 @@ const ImageUploadZone = ({ label }: { label: string }) => {
 };
 
 // Composant pour la gestion des liens
-const LinkManager = ({ sectionKey: _sectionKey }: { sectionKey: string }) => {
+const LinkManager = ({ sectionKey }: { sectionKey: string }) => {
   const [links, setLinks] = useState<Array<{ title: string; url: string }>>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLink, setNewLink] = useState({ title: '', url: '' });
@@ -435,12 +435,15 @@ function App() {
       pdfContainer.style.zIndex = '10000';
       pdfContainer.style.boxSizing = 'border-box';
       
-      // Créer un clone du contenu principal
-      const contentContainer = document.querySelector('.content-container');
-      if (!contentContainer) return;
+      // Chercher le conteneur principal de l'app
+      const appContainer = document.querySelector('.max-w-4xl.mx-auto');
+      if (!appContainer) {
+        alert('Impossible de trouver le contenu à exporter');
+        return;
+      }
       
       // Créer un clone profond du contenu
-      const element = contentContainer.cloneNode(true) as HTMLElement;
+      const element = appContainer.cloneNode(true) as HTMLElement;
       
       // Ajouter le titre et l'auteur en haut
       const header = document.createElement('div');
@@ -503,7 +506,7 @@ function App() {
               color: #999 !important;
               font-style: italic !important;
             }
-            .content-container {
+            .max-w-4xl {
               box-shadow: none !important;
               border: none !important;
               margin: 0 !important;
@@ -673,232 +676,87 @@ function App() {
     />
   );
 
-  const exportToPDF = async () => {
+  const exportToWord = async () => {
     try {
-      // Créer un conteneur pour le PDF
-      const pdfContainer = document.createElement('div');
-      pdfContainer.style.position = 'fixed';
-      pdfContainer.style.left = '0';
-      pdfContainer.style.top = '0';
-      pdfContainer.style.width = '210mm';
-      pdfContainer.style.padding = '20mm';
-      pdfContainer.style.background = theme.background;
-      pdfContainer.style.color = theme.text;
-      pdfContainer.style.zIndex = '10000';
-      pdfContainer.style.boxSizing = 'border-box';
-      
-      // Créer un clone du contenu principal
-      const contentContainer = document.querySelector('.content-container');
-      if (!contentContainer) return;
-      
-      // Créer un clone profond du contenu
-      const element = contentContainer.cloneNode(true) as HTMLElement;
-      
-      // Ajouter le titre et l'auteur en haut
-      const header = document.createElement('div');
-      header.style.textAlign = 'center';
-      header.style.marginBottom = '20px';
-      header.style.paddingBottom = '15px';
-      header.style.borderBottom = `2px solid ${theme.primary}`;
-      header.innerHTML = `
-        <h1 style="color: ${theme.primary}; font-size: 24pt; margin: 0 0 10px 0;">
-          Fiche de Lecture
-        </h1>
-        <div style="font-size: 18pt; color: ${theme.text}; margin: 0; font-weight: normal;">
-          ${pageTitle || 'Sans titre'}
-        </div>
-        ${sheet.auteur ? `<div style="color: #666; font-size: 0.9em; margin-top: 5px;">${sheet.auteur}</div>` : ''}
+      // Create a simple HTML structure for Word export
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Fiche de Lecture - ${pageTitle || 'Sans titre'}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #667eea; text-align: center; }
+            h2 { color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 5px; }
+            .section { margin-bottom: 20px; }
+            .field { margin-bottom: 10px; }
+            .label { font-weight: bold; color: #333; }
+            .content { margin-left: 10px; }
+            .citation { border-left: 3px solid #667eea; padding-left: 10px; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>📖 Fiche de Lecture</h1>
+          <h2 style="text-align: center; margin-bottom: 30px;">${pageTitle || 'Sans titre'}</h2>
+          ${sheet.auteur ? `<p style="text-align: center; font-style: italic; margin-bottom: 30px;">${sheet.auteur}</p>` : ''}
+          
+          <div class="section">
+            <h2>📘 Résumé & Architecture</h2>
+            ${sheet.titre ? `<div class="field"><span class="label">Titre:</span> <span class="content">${sheet.titre}</span></div>` : ''}
+            ${sheet.resume ? `<div class="field"><span class="label">Résumé:</span><div class="content">${sheet.resume}</div></div>` : ''}
+            ${sheet.plan ? `<div class="field"><span class="label">Plan narratif:</span><div class="content">${sheet.plan}</div></div>` : ''}
+            ${sheet.personnages ? `<div class="field"><span class="label">Personnages:</span><div class="content">${sheet.personnages}</div></div>` : ''}
+          </div>
+          
+          ${sheet.citations && sheet.citations.some(c => c.text) ? `
+          <div class="section">
+            <h2>📝 Citations clés</h2>
+            ${sheet.citations.filter(c => c.text).map(citation => `
+              <div class="citation">
+                <em>"${citation.text}"</em>
+                ${citation.page ? ` <small>(p. ${citation.page})</small>` : ''}
+              </div>
+            `).join('')}
+          </div>` : ''}
+          
+          ${sheet.axes ? `
+          <div class="section">
+            <h2>🧠 Axes critiques</h2>
+            <div class="content">${sheet.axes}</div>
+          </div>` : ''}
+          
+          ${sheet.notes ? `
+          <div class="section">
+            <h2>📝 Notes</h2>
+            <div class="content">${sheet.notes}</div>
+          </div>` : ''}
+          
+          <div style="margin-top: 40px; text-align: center; color: #666; font-size: 12px;">
+            Généré le ${new Date().toLocaleDateString('fr-FR')} par l'application Fiche de Lecture
+          </div>
+        </body>
+        </html>
       `;
       
-      // Ajouter l'en-tête et le contenu cloné au conteneur PDF
-      pdfContainer.appendChild(header);
-      pdfContainer.appendChild(element);
-      
-      // Ajouter le conteneur au corps du document
-      document.body.appendChild(pdfContainer);
-      
-      // Attendre que le DOM soit mis à jour
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Options pour html2canvas
-      const options = {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
-        backgroundColor: theme.background,
-        scrollX: 0,
-        scrollY: 0,
-        width: pdfContainer.offsetWidth,
-        height: pdfContainer.scrollHeight,
-        windowWidth: pdfContainer.scrollWidth,
-        windowHeight: pdfContainer.scrollHeight,
-        x: 0,
-        y: 0,
-        onclone: (clonedDoc: Document) => {
-          // S'assurer que les styles sont correctement appliqués
-          const style = document.createElement('style');
-          style.textContent = `
-            * {
-              -webkit-print-color-adjust: exact !important;
-              color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            body {
-              background: ${theme.background} !important;
-              color: ${theme.text} !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100% !important;
-            }
-            .editable:empty::before {
-              color: #999 !important;
-              font-style: italic !important;
-            }
-            .content-container {
-              box-shadow: none !important;
-              border: none !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100% !important;
-              background: ${theme.background} !important;
-            }
-            .section {
-              break-inside: avoid;
-              page-break-inside: avoid;
-              margin-bottom: 20px !important;
-            }
-            .section-title {
-              color: ${theme.primary} !important;
-              border-bottom-color: ${theme.primary} !important;
-            }
-            .editable, .editable[contenteditable="true"] {
-              min-height: 1.5em !important;
-              border: 1px dashed #ccc !important;
-              padding: 8px !important;
-              margin: 5px 0 !important;
-              border-radius: 4px !important;
-              background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(255,255,255,0.05)'} !important;
-            }
-            .citations {
-              background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(0,0,0,0.05)'} !important;
-              padding: 15px !important;
-              border-radius: 8px !important;
-              margin: 15px 0 !important;
-            }
-            .citation {
-              border-left: 3px solid ${theme.primary} !important;
-              padding-left: 10px !important;
-              margin: 10px 0 !important;
-            }
-            .citation-page {
-              background: ${theme.primary} !important;
-              color: white !important;
-              padding: 2px 8px !important;
-              border-radius: 10px !important;
-              font-size: 0.8em !important;
-              display: inline-block !important;
-              margin-top: 5px !important;
-            }
-            img, .image-upload-zone {
-              max-width: 100% !important;
-              height: auto !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        }
-      };
-
-      // Capturer le contenu avec html2canvas
-      const canvas = await html2canvas(pdfContainer as HTMLElement, options as any);
-
-      // Créer le PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-
-      // Calculer les dimensions de l'image pour le PDF
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdfWidth = pdf.internal.pageSize.getWidth() - 20; // Marge de 10mm de chaque côté
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      // Ajouter la première page
-      pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth, pdfHeight, undefined, 'FAST');
-
-      // Gérer les pages supplémentaires si nécessaire
-      const pageHeight = pdf.internal.pageSize.getHeight() - 20; // Marge de 10mm en haut et en bas
-      let heightLeft = pdfHeight - pageHeight + 10; // Ajustement pour la marge
-      let position = 10; // Marge supérieure
-      let page = 1;
-
-      while (heightLeft > 0) {
-        pdf.addPage();
-        position = -((page * pageHeight) - 10); // Ajuster pour la marge supérieure
-        pdf.addImage(imgData, 'PNG', 10, position, pdfWidth, pdfHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
-        page++;
-      }
-
-      // Télécharger le PDF avec un nom de fichier personnalisé
-      const fileName = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.pdf`;
-      pdf.save(fileName);
-      
-      // Nettoyer
-      document.body.removeChild(pdfContainer);
-      
-    } catch (error) {
-      console.error('Erreur lors de la génération du PDF:', error);
-      alert('Une erreur est survenue lors de la génération du PDF');
-    }
-  };
-
-  const exportToWord = () => {
-    // Pour l'instant, on affiche simplement un message
-    alert('Fonctionnalité d\'export Word à implémenter');
-    console.log('Export to Word');
-  };
-
-  const exportData = () => {
-    try {
-      // Créer un objet avec les données à exporter
-      const dataToExport = {
-        titre: sheet.titre,
-        auteur: sheet.auteur,
-        resume: sheet.resume,
-        plan: sheet.plan,
-        // Ajoutez ici les autres champs à exporter
-        dateExport: new Date().toISOString(),
-        version: '1.0'
-      };
-
-      // Convertir en JSON
-      const jsonData = JSON.stringify(dataToExport, null, 2);
-      
-      // Créer un blob avec les données
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      
-      // Créer un lien de téléchargement
+      // Create a blob with HTML content
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.json`;
+      link.download = `fiche-lecture-${pageTitle ? pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.html`;
       
-      // Déclencher le téléchargement
       document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      // Nettoyer
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      // Show success message
+      alert('Fichier HTML généré avec succès ! Vous pouvez l\'ouvrir dans Word ou tout autre traitement de texte.');
       
     } catch (error) {
-      console.error('Erreur lors de l\'exportation des données:', error);
-      alert('Une erreur est survenue lors de l\'exportation des données');
+      console.error('Erreur lors de la génération du document Word:', error);
+      alert('Une erreur est survenue lors de la génération du document Word.');
     }
   };
 
