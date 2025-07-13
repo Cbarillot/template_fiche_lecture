@@ -7,11 +7,11 @@ if "%1"==":open_browser" (
     exit /b 0
 )
 
-REM Vérifier si on doit démarrer en tant qu'administrateur
-if not "%1"=="am_admin" (
-    echo [INFO] Démarrage avec privilèges élevés...
-    powershell start -verb runas '%0' am_admin & exit
-)
+REM Pas besoin de privilèges administrateur pour ce script
+REM if not "%1"=="am_admin" (
+REM     echo [INFO] Démarrage avec privilèges élevés...
+REM     powershell start -verb runas '%0' am_admin & exit
+REM )
 
 chcp 65001 > nul
 title Template Fiche Lecture - Launcher
