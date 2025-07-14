@@ -962,12 +962,31 @@ function App() {
       className="min-h-screen transition-all duration-300"
       style={{ 
         backgroundColor: theme.background,
-        backgroundImage: getBackgroundPattern(currentTheme),
-        backgroundSize: currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px',
+        backgroundImage: theme.backgroundImage ? 
+          `url(${theme.backgroundImage}), ${getBackgroundPattern(currentTheme)}` : 
+          getBackgroundPattern(currentTheme),
+        backgroundSize: theme.backgroundImage ? 
+          'cover, 20px 20px' : 
+          (currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px'),
+        backgroundPosition: theme.backgroundImage ? 'center, 0 0' : '0 0',
+        backgroundBlendMode: theme.backgroundImage ? 'overlay' : 'normal',
         color: theme.text,
         fontFamily: theme.textFont || 'serif'
       }}
     >
+      {/* Background image overlay */}
+      {theme.backgroundImage && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `url(${theme.backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: theme.backgroundImageOpacity || 0.1
+          }}
+        />
+      )}
       {/* Theme-specific decorations */}
       {currentTheme === 'bulletJournal' && <BulletDecorations theme={theme} />}
       {currentTheme === 'livreVintage' && <VintageDecorations theme={theme} />}
