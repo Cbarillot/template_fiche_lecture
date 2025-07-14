@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Edit2, Palette, Trash2, RotateCcw, Check, X, Eye, EyeOff } from 'lucide-react';
 import { ZoneCustomization } from '../types/zoneCustomization';
+import EnhancedColorPicker from './EnhancedColorPicker';
+import { useColorPresets } from '../hooks/useColorPresets';
 
 interface ZoneContainerProps {
   zoneId: string;
@@ -27,6 +29,7 @@ const ZoneContainer: React.FC<ZoneContainerProps> = ({
   const [editingName, setEditingName] = useState(customization.customName || defaultLabel);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const colorPickerRef = useRef<HTMLDivElement>(null);
+  const { presets, addToPresets, addToRecents } = useColorPresets();
 
   const predefinedColors = [
     '#ffffff', // White
@@ -72,6 +75,7 @@ const ZoneContainer: React.FC<ZoneContainerProps> = ({
 
   const handleColorChange = (color: string) => {
     onUpdateCustomization(zoneId, { backgroundColor: color });
+    addToRecents(color);
     setShowColorPicker(false);
   };
 
@@ -172,32 +176,18 @@ const ZoneContainer: React.FC<ZoneContainerProps> = ({
               <div 
                 ref={colorPickerRef}
                 className="absolute top-8 right-0 z-50 bg-white border rounded-lg shadow-lg p-3"
-                style={{ minWidth: '200px' }}
+                style={{ width: '320px' }}
               >
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                  {predefinedColors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handleColorChange(color)}
-                      className={`w-8 h-8 rounded border-2 hover:border-gray-400 transition-colors ${
-                        customization.backgroundColor === color
-                          ? 'border-gray-600 ring-2 ring-gray-300'
-                          : 'border-gray-200'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={`Couleur: ${color}`}
-                    />
-                  ))}
-                </div>
-                <div className="border-t pt-2">
-                  <input
-                    type="color"
-                    value={customization.backgroundColor || '#ffffff'}
-                    onChange={(e) => handleColorChange(e.target.value)}
-                    className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                    title="Couleur personnalisée"
-                  />
-                </div>
+                <EnhancedColorPicker
+                  value={customization.backgroundColor || '#ffffff'}
+                  onChange={handleColorChange}
+                  onAddToPresets={addToPresets}
+                  presets={presets}
+                  size={180}
+                  showColorCodes={true}
+                  showPresets={true}
+                  className="w-full"
+                />
               </div>
             )}
           </div>
