@@ -59,6 +59,7 @@ interface SortableTabProps {
   onTitleChange: (title: string) => void;
   onTitleSave: () => void;
   onTitleCancel: () => void;
+  isCollapsed?: boolean;
 }
 
 const SortableTab: React.FC<SortableTabProps> = ({
@@ -72,6 +73,7 @@ const SortableTab: React.FC<SortableTabProps> = ({
   onTitleChange,
   onTitleSave,
   onTitleCancel,
+  isCollapsed = false,
 }) => {
   const {
     attributes,
@@ -99,54 +101,60 @@ const SortableTab: React.FC<SortableTabProps> = ({
           : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
         }
         ${isDragging ? 'opacity-50 shadow-lg' : ''}
+        ${isCollapsed ? 'justify-center' : ''}
       `}
+      title={isCollapsed ? tab.title : ''}
     >
       {/* Drag Handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing opacity-40 hover:opacity-70 transition-opacity"
-      >
-        <GripVertical size={16} />
-      </div>
+      {!isCollapsed && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing opacity-40 hover:opacity-70 transition-opacity"
+        >
+          <GripVertical size={16} />
+        </div>
+      )}
 
       {/* Tab Content */}
-      <div className="flex-1 flex items-center gap-2" onClick={() => onSelect(tab.id)}>
+      <div className={`flex items-center gap-2 ${isCollapsed ? 'justify-center' : 'flex-1'}`} onClick={() => onSelect(tab.id)}>
         <span className="text-lg">{tab.icon}</span>
         
-        {isEditing ? (
-          <div className="flex items-center gap-2 flex-1">
-            <input
-              type="text"
-              value={editingTitle}
-              onChange={(e) => onTitleChange(e.target.value)}
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') onTitleSave();
-                if (e.key === 'Escape') onTitleCancel();
-              }}
-              autoFocus
-            />
-            <button
-              onClick={onTitleSave}
-              className="p-1 text-green-600 hover:text-green-800"
-            >
-              <Check size={14} />
-            </button>
-            <button
-              onClick={onTitleCancel}
-              className="p-1 text-red-600 hover:text-red-800"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ) : (
-          <span className="text-sm font-medium truncate">{tab.title}</span>
+        {!isCollapsed && (
+          isEditing ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="text"
+                value={editingTitle}
+                onChange={(e) => onTitleChange(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') onTitleSave();
+                  if (e.key === 'Escape') onTitleCancel();
+                }}
+                autoFocus
+              />
+              <button
+                onClick={onTitleSave}
+                className="p-1 text-green-600 hover:text-green-800"
+              >
+                <Check size={14} />
+              </button>
+              <button
+                onClick={onTitleCancel}
+                className="p-1 text-red-600 hover:text-red-800"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <span className="text-sm font-medium truncate">{tab.title}</span>
+          )
         )}
       </div>
 
       {/* Tab Actions */}
-      {!isEditing && (
+      {!isEditing && !isCollapsed && (
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => {
@@ -192,6 +200,7 @@ const TabManager: React.FC<TabManagerProps> = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTabTitle, setNewTabTitle] = useState('');
   const [newTabIcon, setNewTabIcon] = useState('📝');
+  const [isTabSidebarCollapsed, setIsTabSidebarCollapsed] = useState(false);
 
   // Available icons for new tabs
   const availableIcons = [
@@ -325,21 +334,44 @@ const TabManager: React.FC<TabManagerProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full" data-testid="tab-manager">
       {/* Tab Sidebar */}
-      <div className="lg:w-80 flex-shrink-0">
+      <div className={`flex-shrink-0 transition-all duration-300 ${
+        isTabSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'
+      }`}>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Onglets</h3>
-            <button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Ajouter un onglet"
-            >
-              <Plus size={18} />
-            </button>
+            <h3 className={`text-lg font-semibold text-gray-900 transition-opacity duration-200 ${
+              isTabSidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+            }`}>Onglets</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsTabSidebarCollapsed(!isTabSidebarCollapsed)}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                title={isTabSidebarCollapsed ? "Développer" : "Réduire"}
+              >
+                {isTabSidebarCollapsed ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                )}
+              </button>
+              {!isTabSidebarCollapsed && (
+                <button
+                  onClick={() => setShowAddForm(!showAddForm)}
+                  className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Ajouter un onglet"
+                >
+                  <Plus size={18} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Add Tab Form */}
-          {showAddForm && (
+          {showAddForm && !isTabSidebarCollapsed && (
             <div className="mb-4 p-3 bg-gray-50 rounded-lg space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -411,13 +443,14 @@ const TabManager: React.FC<TabManagerProps> = ({
                     onTitleChange={setEditingTitle}
                     onTitleSave={handleSaveEdit}
                     onTitleCancel={handleCancelEdit}
+                    isCollapsed={isTabSidebarCollapsed}
                   />
                 ))}
               </div>
             </SortableContext>
           </DndContext>
 
-          {tabs.length === 0 && (
+          {tabs.length === 0 && !isTabSidebarCollapsed && (
             <div className="text-center py-8 text-gray-500">
               <p className="text-sm">Aucun onglet</p>
               <p className="text-xs">Cliquez sur + pour ajouter un onglet</p>

@@ -827,7 +827,7 @@ function App() {
     }
   };
 
-  // Export to JPG/PNG functions
+  // Export to JPG/PNG functions with enhanced design
   const exportToImages = async (format: 'jpeg' | 'png') => {
     try {
       const zip = new JSZip();
@@ -857,21 +857,30 @@ function App() {
       tempContainer.style.left = '0';
       tempContainer.style.top = '0';
       tempContainer.style.width = '1200px';
-      tempContainer.style.minHeight = '800px';
+      tempContainer.style.minHeight = '1600px';
       tempContainer.style.backgroundColor = theme.background;
       tempContainer.style.color = theme.text;
       tempContainer.style.fontFamily = theme.textFont || 'serif';
       tempContainer.style.zIndex = '10000';
-      tempContainer.style.padding = '40px';
+      tempContainer.style.padding = '0';
       tempContainer.style.boxSizing = 'border-box';
       
-      // Apply background image if exists
+      // Apply background image if exists with proper opacity
       if (theme.backgroundImage) {
         tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
         tempContainer.style.backgroundSize = 'cover';
         tempContainer.style.backgroundPosition = 'center';
-        tempContainer.style.backgroundBlendMode = 'overlay';
         tempContainer.style.backgroundRepeat = 'no-repeat';
+        tempContainer.style.position = 'relative';
+        
+        // Add overlay for background opacity
+        const bgOverlay = document.createElement('div');
+        bgOverlay.style.position = 'absolute';
+        bgOverlay.style.inset = '0';
+        bgOverlay.style.backgroundColor = theme.background;
+        bgOverlay.style.opacity = String(1 - (theme.backgroundImageOpacity || 0.1));
+        bgOverlay.style.pointerEvents = 'none';
+        tempContainer.appendChild(bgOverlay);
       }
       
       document.body.appendChild(tempContainer);
@@ -880,42 +889,81 @@ function App() {
       for (let i = 0; i < defaultTabs.length; i++) {
         const tab = defaultTabs[i];
         
-        // Create tab content
+        // Create enhanced tab content with better design
         const tabContent = document.createElement('div');
         tabContent.style.width = '100%';
-        tabContent.style.minHeight = '720px';
+        tabContent.style.minHeight = '1500px';
         tabContent.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-        tabContent.style.padding = '30px';
-        tabContent.style.borderRadius = '10px';
-        tabContent.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        tabContent.style.padding = '60px';
+        tabContent.style.borderRadius = '20px';
+        tabContent.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.1)';
+        tabContent.style.margin = '40px';
+        tabContent.style.position = 'relative';
+        tabContent.style.overflow = 'hidden';
         
-        // Add tab header
+        // Add decorative elements
+        const decorativeHeader = document.createElement('div');
+        decorativeHeader.style.position = 'absolute';
+        decorativeHeader.style.top = '0';
+        decorativeHeader.style.left = '0';
+        decorativeHeader.style.right = '0';
+        decorativeHeader.style.height = '8px';
+        decorativeHeader.style.background = theme.gradient;
+        decorativeHeader.style.borderRadius = '20px 20px 0 0';
+        tabContent.appendChild(decorativeHeader);
+        
+        // Add app branding header
+        const brandingHeader = document.createElement('div');
+        brandingHeader.style.textAlign = 'center';
+        brandingHeader.style.marginBottom = '40px';
+        brandingHeader.style.padding = '20px 0';
+        brandingHeader.style.borderBottom = `2px solid ${theme.primary}`;
+        brandingHeader.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+            <span style="font-size: 36px;">📖</span>
+            <h1 style="color: ${theme.primary}; font-size: 32px; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'serif'};">
+              Fiche de Lecture
+            </h1>
+          </div>
+          <div style="font-size: 18px; color: ${theme.text}; margin: 0; font-weight: normal;">
+            ${sheet.titre || 'Sans titre'}
+          </div>
+          ${sheet.auteur ? `<div style="color: ${theme.textLight}; font-size: 14px; margin-top: 8px; font-style: italic;">${sheet.auteur}</div>` : ''}
+        `;
+        tabContent.appendChild(brandingHeader);
+        
+        // Add tab header with enhanced design
         const tabHeader = document.createElement('div');
-        tabHeader.style.borderBottom = `2px solid ${theme.primary}`;
-        tabHeader.style.paddingBottom = '20px';
-        tabHeader.style.marginBottom = '30px';
         tabHeader.style.display = 'flex';
         tabHeader.style.alignItems = 'center';
-        tabHeader.style.gap = '10px';
+        tabHeader.style.gap = '15px';
+        tabHeader.style.marginBottom = '40px';
+        tabHeader.style.padding = '20px';
+        tabHeader.style.background = `linear-gradient(135deg, ${theme.primary}15 0%, ${theme.secondary}15 100%)`;
+        tabHeader.style.borderRadius = '15px';
+        tabHeader.style.border = `2px solid ${theme.primary}30`;
         
-        const tabIcon = document.createElement('span');
-        tabIcon.style.fontSize = '24px';
+        const tabIcon = document.createElement('div');
+        tabIcon.style.fontSize = '36px';
+        tabIcon.style.minWidth = '50px';
         tabIcon.textContent = tab.icon;
         
         const tabTitle = document.createElement('h1');
-        tabTitle.style.fontSize = '24px';
+        tabTitle.style.fontSize = '28px';
         tabTitle.style.fontWeight = 'bold';
         tabTitle.style.color = theme.primary;
         tabTitle.style.margin = '0';
+        tabTitle.style.fontFamily = theme.titleFont || 'serif';
         tabTitle.textContent = tab.title;
         
         tabHeader.appendChild(tabIcon);
         tabHeader.appendChild(tabTitle);
         tabContent.appendChild(tabHeader);
         
-        // Add tab body content
+        // Add tab body content with enhanced styling
         const tabBody = document.createElement('div');
-        tabBody.style.lineHeight = '1.6';
+        tabBody.style.lineHeight = '1.8';
+        tabBody.style.fontSize = '16px';
         
         // Get the actual tab content based on tab ID
         const actualTabContent = getTabContentForExport(tab.id);
@@ -925,21 +973,50 @@ function App() {
         
         tabContent.appendChild(tabBody);
         
+        // Add footer with app info
+        const footer = document.createElement('div');
+        footer.style.marginTop = '60px';
+        footer.style.textAlign = 'center';
+        footer.style.padding = '20px';
+        footer.style.color = theme.textLight;
+        footer.style.fontSize = '12px';
+        footer.style.borderTop = `1px solid ${theme.border}`;
+        footer.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span>📖</span>
+            <span>Généré le ${new Date().toLocaleDateString('fr-FR')} par l'application Fiche de Lecture</span>
+          </div>
+        `;
+        tabContent.appendChild(footer);
+        
         // Clear previous content and add new tab content
         tempContainer.innerHTML = '';
+        if (theme.backgroundImage) {
+          // Re-add background overlay
+          const bgOverlay = document.createElement('div');
+          bgOverlay.style.position = 'absolute';
+          bgOverlay.style.inset = '0';
+          bgOverlay.style.backgroundColor = theme.background;
+          bgOverlay.style.opacity = String(1 - (theme.backgroundImageOpacity || 0.1));
+          bgOverlay.style.pointerEvents = 'none';
+          tempContainer.appendChild(bgOverlay);
+        }
         tempContainer.appendChild(tabContent);
         
         // Wait for content to render
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Capture the tab as image
+        // Capture the tab as image with better quality
         const canvas = await html2canvas(tempContainer, {
           width: 1200,
-          height: 800,
+          height: 1600,
           backgroundColor: theme.background,
           scale: 2,
           useCORS: true,
-          logging: false
+          logging: false,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          imageTimeout: 15000
         });
         
         // Convert canvas to blob
@@ -963,7 +1040,7 @@ function App() {
       const fileName = `fiche-lecture-${sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled'}-${format}.zip`;
       downloadFile(zipBlob, fileName);
       
-      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées.`);
+      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées avec design amélioré.`);
       
     } catch (error) {
       console.error('Error exporting to images:', error);
@@ -971,103 +1048,130 @@ function App() {
     }
   };
 
-  // Helper function to get tab content for export
+  // Helper function to get tab content for export with enhanced styling
   const getTabContentForExport = (tabId: string): HTMLElement | null => {
     // Create a simplified version of the tab content for export
     const contentDiv = document.createElement('div');
     
+    const createStyledSection = (title: string, content: string, isMain = false) => {
+      const section = document.createElement('div');
+      section.style.marginBottom = '30px';
+      section.style.padding = '20px';
+      section.style.backgroundColor = isMain ? `${theme.primary}10` : '#f8f9fa';
+      section.style.borderRadius = '12px';
+      section.style.border = `1px solid ${theme.border}`;
+      section.style.position = 'relative';
+      
+      // Add a decorative left border for main sections
+      if (isMain) {
+        section.style.borderLeft = `4px solid ${theme.primary}`;
+      }
+      
+      const titleElement = document.createElement('h3');
+      titleElement.style.color = theme.primary;
+      titleElement.style.marginBottom = '15px';
+      titleElement.style.fontSize = '18px';
+      titleElement.style.fontWeight = 'bold';
+      titleElement.style.fontFamily = theme.titleFont || 'serif';
+      titleElement.textContent = title;
+      
+      const contentElement = document.createElement('div');
+      contentElement.style.color = theme.text;
+      contentElement.style.fontSize = '16px';
+      contentElement.style.lineHeight = '1.6';
+      contentElement.style.minHeight = '120px';
+      contentElement.style.whiteSpace = 'pre-wrap';
+      contentElement.style.fontFamily = theme.textFont || 'serif';
+      contentElement.textContent = content || 'Non renseigné';
+      
+      section.appendChild(titleElement);
+      section.appendChild(contentElement);
+      return section;
+    };
+    
     switch (tabId) {
       case 'resume-architecture':
-        contentDiv.innerHTML = `
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Titre de l'œuvre</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; margin: 0;">
-              ${sheet.titre || 'Non renseigné'}
-            </p>
-          </div>
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Auteur</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; margin: 0;">
-              ${sheet.auteur || 'Non renseigné'}
-            </p>
-          </div>
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Résumé</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 150px; margin: 0; white-space: pre-wrap;">
-              ${sheet.resume || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Titre de l\'œuvre', sheet.titre || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Auteur', sheet.auteur || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Résumé détaillé', sheet.resume || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Plan narratif / Architecture', sheet.plan || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Temporalités', sheet.temporalites || 'Non renseigné'));
         break;
       case 'analyse-stylistique':
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Analyse stylistique</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
-              ${sheet.analyseStyleistique || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Points de vue / Focalisation', sheet.pointsVue || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Système des personnages', sheet.personnages || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Registres, tonalités, leitmotive', sheet.registres || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Rythme narratif', sheet.rythme || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Figures de style', sheet.figures || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Procédés stylistiques', sheet.procedes || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Lexique', sheet.lexique || 'Non renseigné'));
         break;
       case 'problematiques-enjeux':
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Problématiques et enjeux</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
-              ${sheet.problematiquesEnjeux || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Axes d\'analyse', sheet.axes || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Tensions et conflits', sheet.tensions || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Lectures critiques', sheet.lectures || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Intuitions personnelles', sheet.intuitions || 'Non renseigné'));
+        
+        // Add citations section with special styling
+        if (sheet.citations && sheet.citations.some(c => c.text)) {
+          const citationsDiv = document.createElement('div');
+          citationsDiv.style.marginBottom = '30px';
+          citationsDiv.style.padding = '20px';
+          citationsDiv.style.backgroundColor = `${theme.secondary}10`;
+          citationsDiv.style.borderRadius = '12px';
+          citationsDiv.style.border = `1px solid ${theme.secondary}30`;
+          citationsDiv.style.borderLeft = `4px solid ${theme.secondary}`;
+          
+          const citationsTitle = document.createElement('h3');
+          citationsTitle.style.color = theme.secondary;
+          citationsTitle.style.marginBottom = '15px';
+          citationsTitle.style.fontSize = '18px';
+          citationsTitle.style.fontWeight = 'bold';
+          citationsTitle.textContent = 'Citations clés';
+          citationsDiv.appendChild(citationsTitle);
+          
+          sheet.citations.filter(c => c.text).forEach(citation => {
+            const citationBlock = document.createElement('div');
+            citationBlock.style.marginBottom = '15px';
+            citationBlock.style.padding = '15px';
+            citationBlock.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            citationBlock.style.borderRadius = '8px';
+            citationBlock.style.borderLeft = `3px solid ${theme.secondary}`;
+            citationBlock.style.fontStyle = 'italic';
+            citationBlock.innerHTML = `
+              <div style="color: ${theme.text}; margin-bottom: 8px;">"${citation.text}"</div>
+              ${citation.page ? `<div style="color: ${theme.textLight}; font-size: 14px; text-align: right;">— Page ${citation.page}</div>` : ''}
+            `;
+            citationsDiv.appendChild(citationBlock);
+          });
+          
+          contentDiv.appendChild(citationsDiv);
+        }
         break;
       case 'images-oeuvre':
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Images dans l'œuvre</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
-              ${sheet.imagesOeuvre || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Images dans l\'œuvre', sheet.images || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Fonction des images', sheet.fonction || 'Non renseigné'));
         break;
       case 'contexte-perspectives':
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Contexte et perspectives</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
-              ${sheet.contextePerspectives || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Biographie de l\'auteur', sheet.biographie || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Place dans l\'œuvre', sheet.place || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Courants littéraires', sheet.courants || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Contexte historique', sheet.contexte || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Réception critique', sheet.reception || 'Non renseigné'));
         break;
       case 'comparatisme':
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Comparatisme</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
-              ${sheet.comparatisme || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Autres œuvres de l\'auteur', sheet.oeuvres || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Thématiques communes', sheet.thematiques || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Points de convergence', sheet.convergence || 'Non renseigné'));
         break;
       case 'annexes':
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Annexes</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
-              ${sheet.annexes || 'Non renseigné'}
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Glossaire', sheet.glossaire || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Notes personnelles', sheet.notes || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Schémas et cartes', sheet.schemas || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Références', sheet.references || 'Non renseigné'));
         break;
       default:
-        contentDiv.innerHTML = `
-          <div>
-            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Contenu personnalisé</h3>
-            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0;">
-              Contenu de l'onglet personnalisé
-            </p>
-          </div>
-        `;
+        contentDiv.appendChild(createStyledSection('Contenu personnalisé', 'Contenu de l\'onglet personnalisé', true));
     }
     
     return contentDiv;
@@ -1123,7 +1227,9 @@ function App() {
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: theme.backgroundImageOpacity || 0.1
+            opacity: theme.backgroundImageOpacity || 0.1,
+            // Add a slight transition for smooth opacity changes
+            transition: 'opacity 0.3s ease-in-out'
           }}
         />
       )}
