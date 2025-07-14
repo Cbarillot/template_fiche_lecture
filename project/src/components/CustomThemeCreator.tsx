@@ -36,20 +36,20 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
   const [activeTab, setActiveTab] = useState<'colors' | 'fonts'>('colors');
   const [advancedMode, setAdvancedMode] = useState(false);
   
-  // Individual color states
+  // Individual color states - initialize from current theme
   const [customColors, setCustomColors] = useState({
-    primary: '#667eea',
-    secondary: '#764ba2',
-    accent: '#8e44ad',
-    background: '#f8f9fa',
-    border: '#e9ecef',
-    text: '#2c3e50'
+    primary: currentTheme.primary || '#667eea',
+    secondary: currentTheme.secondary || '#764ba2',
+    accent: currentTheme.accent || '#8e44ad',
+    background: currentTheme.background || '#f8f9fa',
+    border: currentTheme.border || '#e9ecef',
+    text: currentTheme.text || '#2c3e50'
   });
   
   // Font states
   const [customFonts, setCustomFonts] = useState({
-    titleFont: '',
-    textFont: ''
+    titleFont: currentTheme.titleFont || '',
+    textFont: currentTheme.textFont || ''
   });
 
   const handleColorChange = useCallback((color: string) => {
@@ -142,6 +142,22 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
       titleFont: newFonts.titleFont || prev.titleFont,
       textFont: newFonts.textFont || prev.textFont
     }));
+  };
+
+  // Sync custom colors when switching to advanced mode
+  const toggleAdvancedMode = (enabled: boolean) => {
+    setAdvancedMode(enabled);
+    if (enabled) {
+      // Sync custom colors with current preview theme
+      setCustomColors({
+        primary: previewTheme.primary || '#667eea',
+        secondary: previewTheme.secondary || '#764ba2',
+        accent: previewTheme.accent || '#8e44ad',
+        background: previewTheme.background || '#f8f9fa',
+        border: previewTheme.border || '#e9ecef',
+        text: previewTheme.text || '#2c3e50'
+      });
+    }
   };
 
   const handleHexInputChange = (value: string) => {
@@ -342,7 +358,10 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
             <div className="space-y-4">
               {/* Mode Switch */}
               <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                <div>
+                <div
+                  onClick={() => toggleAdvancedMode(!advancedMode)}
+                  className="cursor-pointer flex-1"
+                >
                   <span className="font-medium">Mode de personnalisation</span>
                   <p className="text-sm text-gray-500">
                     {advancedMode ? 'Contrôle individuel de chaque couleur' : 'Génération automatique depuis la couleur principale'}
@@ -352,7 +371,7 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
                   <input
                     type="checkbox"
                     checked={advancedMode}
-                    onChange={(e) => setAdvancedMode(e.target.checked)}
+                    onChange={(e) => toggleAdvancedMode(e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
