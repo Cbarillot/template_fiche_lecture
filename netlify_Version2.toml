@@ -1,0 +1,15 @@
+[build]
+  command = "cd project && npm ci && npm run build"
+  publish = "project/dist"
+
+# Redirections pour SPA (Single Page Application)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers pour optimisation
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
