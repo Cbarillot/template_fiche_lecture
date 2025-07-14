@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Camera, Save, Printer } from 'lucide-react';
+import { Plus, Trash2, Save, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 import { exportSimple, exportModern, exportWebStyle, exportSimpleWeb, ExportOptions } from './exports';
 import { downloadFile, openFileInNewTab } from './exports/utils';
 import CustomThemeCreator from './components/CustomThemeCreator';
 import TabManager from './components/TabManager';
 import { useCustomThemes } from './hooks/useCustomThemes';
-import { ReadingSheet, Citation } from './components/sections/SectionComponents';
+import { ReadingSheet } from './components/sections/SectionComponents';
 
 // Link Manager Component
 const LinkManager = ({ sectionKey }: { sectionKey: string }) => {
@@ -826,6 +827,255 @@ function App() {
     }
   };
 
+  // Export to JPG/PNG functions
+  const exportToImages = async (format: 'jpeg' | 'png') => {
+    try {
+      const zip = new JSZip();
+      
+      // Get tab manager component to access tabs
+      const tabManagerElement = document.querySelector('[data-testid="tab-manager"]') as HTMLElement;
+      if (!tabManagerElement) {
+        alert('Impossible de trouver le gestionnaire d\'onglets');
+        return;
+      }
+
+      // Get tabs from the useDynamicTabs hook - we need to access the actual tab data
+      // For now, we'll use the default tabs structure
+      const defaultTabs = [
+        { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
+        { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
+        { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
+        { id: 'images-oeuvre', title: 'Images dans l\'œuvre', icon: '🖼️' },
+        { id: 'contexte-perspectives', title: 'Contexte & Perspectives', icon: '🔍' },
+        { id: 'comparatisme', title: 'Comparatisme', icon: '🔄' },
+        { id: 'annexes', title: 'Annexes', icon: '📂' }
+      ];
+
+      // Create a temporary container for capturing tab content
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '0';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '1200px';
+      tempContainer.style.minHeight = '800px';
+      tempContainer.style.backgroundColor = theme.background;
+      tempContainer.style.color = theme.text;
+      tempContainer.style.fontFamily = theme.textFont || 'serif';
+      tempContainer.style.zIndex = '10000';
+      tempContainer.style.padding = '40px';
+      tempContainer.style.boxSizing = 'border-box';
+      
+      // Apply background image if exists
+      if (theme.backgroundImage) {
+        tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
+        tempContainer.style.backgroundSize = 'cover';
+        tempContainer.style.backgroundPosition = 'center';
+        tempContainer.style.backgroundBlendMode = 'overlay';
+        tempContainer.style.backgroundRepeat = 'no-repeat';
+      }
+      
+      document.body.appendChild(tempContainer);
+
+      // For each tab, capture it as an image
+      for (let i = 0; i < defaultTabs.length; i++) {
+        const tab = defaultTabs[i];
+        
+        // Create tab content
+        const tabContent = document.createElement('div');
+        tabContent.style.width = '100%';
+        tabContent.style.minHeight = '720px';
+        tabContent.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+        tabContent.style.padding = '30px';
+        tabContent.style.borderRadius = '10px';
+        tabContent.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        
+        // Add tab header
+        const tabHeader = document.createElement('div');
+        tabHeader.style.borderBottom = `2px solid ${theme.primary}`;
+        tabHeader.style.paddingBottom = '20px';
+        tabHeader.style.marginBottom = '30px';
+        tabHeader.style.display = 'flex';
+        tabHeader.style.alignItems = 'center';
+        tabHeader.style.gap = '10px';
+        
+        const tabIcon = document.createElement('span');
+        tabIcon.style.fontSize = '24px';
+        tabIcon.textContent = tab.icon;
+        
+        const tabTitle = document.createElement('h1');
+        tabTitle.style.fontSize = '24px';
+        tabTitle.style.fontWeight = 'bold';
+        tabTitle.style.color = theme.primary;
+        tabTitle.style.margin = '0';
+        tabTitle.textContent = tab.title;
+        
+        tabHeader.appendChild(tabIcon);
+        tabHeader.appendChild(tabTitle);
+        tabContent.appendChild(tabHeader);
+        
+        // Add tab body content
+        const tabBody = document.createElement('div');
+        tabBody.style.lineHeight = '1.6';
+        
+        // Get the actual tab content based on tab ID
+        const actualTabContent = getTabContentForExport(tab.id);
+        if (actualTabContent) {
+          tabBody.appendChild(actualTabContent);
+        }
+        
+        tabContent.appendChild(tabBody);
+        
+        // Clear previous content and add new tab content
+        tempContainer.innerHTML = '';
+        tempContainer.appendChild(tabContent);
+        
+        // Wait for content to render
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Capture the tab as image
+        const canvas = await html2canvas(tempContainer, {
+          width: 1200,
+          height: 800,
+          backgroundColor: theme.background,
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+        
+        // Convert canvas to blob
+        const blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+          }, `image/${format}`, format === 'jpeg' ? 0.9 : 1.0);
+        });
+        
+        // Add to zip
+        const tabName = tab.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const fileName = `${String(i + 1).padStart(2, '0')}-${tabName}.${format}`;
+        zip.file(fileName, blob);
+      }
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
+      
+      // Generate and download zip
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const fileName = `fiche-lecture-${sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled'}-${format}.zip`;
+      downloadFile(zipBlob, fileName);
+      
+      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées.`);
+      
+    } catch (error) {
+      console.error('Error exporting to images:', error);
+      alert(`Une erreur est survenue lors de l'export en ${format.toUpperCase()}`);
+    }
+  };
+
+  // Helper function to get tab content for export
+  const getTabContentForExport = (tabId: string): HTMLElement | null => {
+    // Create a simplified version of the tab content for export
+    const contentDiv = document.createElement('div');
+    
+    switch (tabId) {
+      case 'resume-architecture':
+        contentDiv.innerHTML = `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Titre de l'œuvre</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; margin: 0;">
+              ${sheet.titre || 'Non renseigné'}
+            </p>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Auteur</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; margin: 0;">
+              ${sheet.auteur || 'Non renseigné'}
+            </p>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Résumé</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 150px; margin: 0; white-space: pre-wrap;">
+              ${sheet.resume || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'analyse-stylistique':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Analyse stylistique</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.analyseStyleistique || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'problematiques-enjeux':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Problématiques et enjeux</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.problematiquesEnjeux || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'images-oeuvre':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Images dans l'œuvre</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.imagesOeuvre || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'contexte-perspectives':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Contexte et perspectives</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.contextePerspectives || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'comparatisme':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Comparatisme</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.comparatisme || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'annexes':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Annexes</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.annexes || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      default:
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Contenu personnalisé</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0;">
+              Contenu de l'onglet personnalisé
+            </p>
+          </div>
+        `;
+    }
+    
+    return contentDiv;
+  };
+
+  const exportToJPG = () => exportToImages('jpeg');
+  const exportToPNG = () => exportToImages('png');
+
   // Generate background patterns based on theme
   const getBackgroundPattern = (themeName: string) => {
     if (themeName === 'bulletJournal') {
@@ -1031,6 +1281,24 @@ function App() {
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     💾 Exporter en JSON
+                  </button>
+                  
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Export Images (par onglet)
+                  </div>
+                  <button
+                    onClick={exportToJPG}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🖼️ Exporter en JPG
+                  </button>
+                  <button
+                    onClick={exportToPNG}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🖼️ Exporter en PNG
                   </button>
                   
                   <div className="border-t border-gray-200 my-1"></div>

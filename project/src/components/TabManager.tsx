@@ -10,7 +10,6 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -324,7 +323,7 @@ const TabManager: React.FC<TabManagerProps> = ({
   const activeTabData = tabs.find(tab => tab.id === activeTab);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 h-full" data-testid="tab-manager">
       {/* Tab Sidebar */}
       <div className="lg:w-80 flex-shrink-0">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
