@@ -430,6 +430,21 @@ function App() {
         tempContainer.style.backgroundSize = currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px';
         tempContainer.style.backgroundPosition = '0 0';
         tempContainer.style.backgroundRepeat = 'repeat';
+      } else {
+        // For custom background images, apply them with careful opacity
+        try {
+          tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
+          tempContainer.style.backgroundSize = 'cover';
+          tempContainer.style.backgroundPosition = 'center';
+          tempContainer.style.backgroundRepeat = 'no-repeat';
+          tempContainer.style.backgroundAttachment = 'fixed';
+        } catch (error) {
+          console.warn('Failed to apply custom background image, using fallback');
+          // Fallback to pattern background
+          const backgroundPattern = getBackgroundPattern(currentTheme);
+          tempContainer.style.backgroundImage = backgroundPattern;
+          tempContainer.style.backgroundSize = '20px 20px';
+        }
       }
 
       document.body.appendChild(tempContainer);
@@ -441,17 +456,36 @@ function App() {
 
         console.log(`Processing tab ${i + 1}: ${tab.title}`);
 
-        // Create page content
+        // Create page content with enhanced background support
         const pageContent = document.createElement('div');
         pageContent.style.width = '100%';
         pageContent.style.height = '100%';
-        pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-        pageContent.style.padding = '60px 45px'; // Convert mm to pixels roughly
+        
+        // Enhanced background handling for better theme integration
+        if (theme.backgroundImage) {
+          pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.92)';
+          pageContent.style.backdropFilter = 'blur(0.5px)';
+        } else if (currentTheme === 'bulletJournal' || currentTheme === 'livreVintage') {
+          pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.96)';
+        } else {
+          pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+        }
+        
+        pageContent.style.padding = '60px 45px';
         pageContent.style.boxSizing = 'border-box';
         pageContent.style.position = 'relative';
         pageContent.style.display = 'flex';
         pageContent.style.flexDirection = 'column';
         pageContent.style.fontFamily = 'inherit';
+        
+        // Add subtle border for themed pages
+        if (currentTheme === 'bulletJournal' || currentTheme === 'livreVintage') {
+          pageContent.style.border = `1px solid ${theme.primary || '#667eea'}20`;
+          pageContent.style.borderRadius = '8px';
+          pageContent.style.margin = '10px';
+          pageContent.style.width = 'calc(100% - 20px)';
+          pageContent.style.height = 'calc(100% - 20px)';
+        }
 
         // Add page header
         const pageHeader = document.createElement('div');
@@ -557,8 +591,8 @@ function App() {
         // Wait for content to render
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Capture page with html2canvas
-        const canvas = await html2canvas(tempContainer, {
+        // Capture page with html2canvas with enhanced background support
+        const canvasOptions = {
           width: 794,
           height: 1123,
           backgroundColor: theme.background || '#ffffff',
@@ -567,6 +601,13 @@ function App() {
           logging: false,
           allowTaint: true,
           foreignObjectRendering: true,
+          imageTimeout: 15000,
+          // Enhanced options for better background capture
+          removeContainer: true,
+          ignoreElements: (element: Element) => {
+            // Ignore elements that might cause issues with background rendering
+            return element.tagName === 'SCRIPT' || element.tagName === 'STYLE';
+          },
           onclone: (clonedDoc: Document) => {
             // Add comprehensive styles to ensure proper rendering
             const style = document.createElement('style');
@@ -576,6 +617,12 @@ function App() {
                 color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 box-sizing: border-box !important;
+              }
+              
+              body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: ${theme.background || '#ffffff'} !important;
               }
               
               .pdf-section {
@@ -637,10 +684,49 @@ function App() {
                 text-align: right !important;
                 font-style: normal !important;
               }
+              
+              /* Enhanced theme-specific styles */
+              ${currentTheme === 'bulletJournal' ? `
+                .pdf-section {
+                  border-left: 4px solid ${theme.primary || '#F9A825'} !important;
+                  position: relative !important;
+                }
+                .pdf-section::before {
+                  content: "•" !important;
+                  position: absolute !important;
+                  left: -15px !important;
+                  top: 20px !important;
+                  color: ${theme.primary || '#F9A825'} !important;
+                  font-size: 20px !important;
+                }
+              ` : ''}
+              
+              ${currentTheme === 'livreVintage' ? `
+                .pdf-section {
+                  border: 1px solid ${theme.primary || '#8D6E63'}40 !important;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+                  background: rgba(250, 243, 224, 0.9) !important;
+                }
+                .pdf-section-title {
+                  font-family: 'Playfair Display', serif !important;
+                  text-decoration: underline !important;
+                  text-decoration-color: ${theme.primary || '#8D6E63'} !important;
+                }
+              ` : ''}
             `;
             clonedDoc.head.appendChild(style);
+            
+            // Add theme-specific fonts if available
+            if (theme.titleFont && theme.titleFont !== 'Arial, sans-serif') {
+              const fontLink = document.createElement('link');
+              fontLink.rel = 'stylesheet';
+              fontLink.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:wght@400;500&family=Caveat:wght@400;700&family=Quicksand:wght@300;400;500&display=swap';
+              clonedDoc.head.appendChild(fontLink);
+            }
           }
-        });
+        };
+        
+        const canvas = await html2canvas(tempContainer, canvasOptions);
 
         console.log(`Canvas captured for tab ${i + 1}`);
 
@@ -661,7 +747,7 @@ function App() {
       // Clean up
       document.body.removeChild(tempContainer);
 
-      alert(`PDF généré avec succès ! ${defaultTabs.length} pages créées avec tout le contenu.`);
+      alert(`PDF généré avec succès ! ${defaultTabs.length} pages créées avec thème "${themes[currentTheme as keyof typeof themes]?.name || 'personnalisé'}" et arrière-plan intégré.`);
 
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
@@ -1165,7 +1251,7 @@ function App() {
       const fileName = `fiche-lecture-${sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled'}-${format}.zip`;
       downloadFile(zipBlob, fileName);
       
-      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées avec design amélioré.`);
+      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées avec thème "${themes[currentTheme as keyof typeof themes]?.name || 'personnalisé'}" et arrière-plan intégré.`);
       
     } catch (error) {
       console.error('Error exporting to images:', error);
