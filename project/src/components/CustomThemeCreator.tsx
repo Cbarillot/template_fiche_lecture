@@ -34,19 +34,64 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   const handleColorChange = useCallback((color: string) => {
-    setSelectedColor(color);
-    setHexInput(color);
-    
-    const palette = generatePalette(color);
-    if (palette) {
-      setPreviewTheme(palette);
+    try {
+      console.log('HandleColorChange called with color:', color);
+      
+      // Validate color input
+      if (!color || typeof color !== 'string') {
+        console.error('Invalid color input:', color);
+        alert('Erreur: Couleur invalide reçue');
+        return;
+      }
+      
+      // Validate hex format
+      if (!isValidHex(color)) {
+        console.error('Invalid hex format:', color);
+        alert('Erreur: Format de couleur hexadécimal invalide');
+        return;
+      }
+      
+      setSelectedColor(color);
+      setHexInput(color);
+      
+      console.log('Generating palette for color:', color);
+      const palette = generatePalette(color);
+      console.log('Generated palette:', palette);
+      
+      if (palette) {
+        setPreviewTheme(palette);
+        console.log('Preview theme updated successfully');
+      } else {
+        console.error('Failed to generate palette for color:', color);
+        alert('Erreur: Impossible de générer la palette de couleurs');
+      }
+    } catch (error) {
+      console.error('Error in handleColorChange:', error);
+      alert('Erreur lors du changement de couleur. Veuillez réessayer.');
     }
   }, []);
 
   const handleHexInputChange = (value: string) => {
-    setHexInput(value);
-    if (isValidHex(value)) {
-      handleColorChange(value);
+    try {
+      console.log('HandleHexInputChange called with value:', value);
+      
+      // Validate input
+      if (typeof value !== 'string') {
+        console.error('Invalid hex input type:', typeof value);
+        return;
+      }
+      
+      setHexInput(value);
+      
+      if (isValidHex(value)) {
+        console.log('Valid hex detected, calling handleColorChange');
+        handleColorChange(value);
+      } else {
+        console.log('Invalid hex format, not updating color');
+      }
+    } catch (error) {
+      console.error('Error in handleHexInputChange:', error);
+      alert('Erreur lors de la saisie de la couleur hexadécimale');
     }
   };
 
