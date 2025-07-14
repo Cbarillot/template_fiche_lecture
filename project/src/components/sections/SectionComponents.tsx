@@ -1,6 +1,8 @@
 import React from 'react';
 import { Plus, Trash2, Camera } from 'lucide-react';
 import RichTextEditor from '../RichTextEditor';
+import ZoneContainer from '../ZoneContainer';
+import { ZoneCustomization } from '../../types/zoneCustomization';
 
 export interface ReadingSheet {
   titre: string;
@@ -48,6 +50,10 @@ interface SectionProps {
   addCitation: () => void;
   removeCitation: (index: number) => void;
   theme: any;
+  zoneCustomizations: { [key: string]: ZoneCustomization };
+  onUpdateZoneCustomization: (zoneId: string, updates: Partial<ZoneCustomization>) => void;
+  onDeleteZone: (zoneId: string) => void;
+  onRestoreZone: (zoneId: string) => void;
 }
 
 // Image Upload Zone Component
@@ -125,43 +131,62 @@ const ImageUploadZone = ({ label }: { label: string }) => {
 };
 
 // Section 1: Résumé & Architecture
-export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updateField, theme }) => (
+export const ResumeArchitectureSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme, 
+  zoneCustomizations, 
+  onUpdateZoneCustomization, 
+  onDeleteZone, 
+  onRestoreZone 
+}) => (
   <div className="space-y-6">
     <div className="grid md:grid-cols-2 gap-6 mb-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Titre de l'œuvre
-        </label>
+      <ZoneContainer
+        zoneId="titre"
+        defaultLabel="Titre de l'œuvre"
+        customization={zoneCustomizations.titre}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
         <input
           type="text"
           value={sheet.titre}
           onChange={(e) => updateField('titre', e.target.value)}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: zoneCustomizations.titre?.backgroundColor || '#ffffff',
             borderColor: theme.border,
-            color: theme.text
+            color: theme.text,
+            opacity: 1
           }}
           placeholder="Titre de l'œuvre"
         />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Auteur·ice / Édition utilisée
-        </label>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="auteur"
+        defaultLabel="Auteur·ice / Édition utilisée"
+        customization={zoneCustomizations.auteur}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
         <input
           type="text"
           value={sheet.auteur}
           onChange={(e) => updateField('auteur', e.target.value)}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: zoneCustomizations.auteur?.backgroundColor || '#ffffff',
             borderColor: theme.border,
-            color: theme.text
+            color: theme.text,
+            opacity: 1
           }}
           placeholder="Auteur et édition"
         />
-      </div>
+      </ZoneContainer>
     </div>
 
     <div className="mb-6">
@@ -171,122 +196,157 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
       <ImageUploadZone label="une image de couverture" />
     </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Résumé détaillé
-        </label>
-        <RichTextEditor
-          value={sheet.resume}
-          onChange={(value) => updateField('resume', value)}
-          placeholder="Résumé détaillé de l'œuvre..."
-          theme={theme}
-          rows={6}
-        />
-      </div>
+    <ZoneContainer
+      zoneId="resume"
+      defaultLabel="Résumé détaillé"
+      customization={zoneCustomizations.resume}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
+      <RichTextEditor
+        value={sheet.resume}
+        onChange={(value) => updateField('resume', value)}
+        placeholder="Résumé détaillé de l'œuvre..."
+        theme={theme}
+        rows={6}
+        className="bg-white"
+        style={{
+          backgroundColor: zoneCustomizations.resume?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
+      />
+    </ZoneContainer>
 
     <div className="grid md:grid-cols-2 gap-6 mb-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Plan narratif / Architecture
-        </label>
+      <ZoneContainer
+        zoneId="plan"
+        defaultLabel="Plan narratif / Architecture"
+        customization={zoneCustomizations.plan}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
         <RichTextEditor
           value={sheet.plan}
           onChange={(value) => updateField('plan', value)}
           placeholder="Structure de l'œuvre..."
           theme={theme}
           rows={4}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Temporalités (ordre, vitesse, ellipses)
-        </label>
-        <textarea
-          value={sheet.temporalites}
-          onChange={(e) => updateField('temporalites', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.plan?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Analyse temporelle..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="temporalites"
+        defaultLabel="Temporalités (ordre, vitesse, ellipses)"
+        customization={zoneCustomizations.temporalites}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.temporalites}
+          onChange={(value) => updateField('temporalites', value)}
+          placeholder="Analyse temporelle..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.temporalites?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
 
     <div className="grid md:grid-cols-3 gap-4 mb-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Points de vue / focalisation
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="pointsVue"
+        defaultLabel="Points de vue / focalisation"
+        customization={zoneCustomizations.pointsVue}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.pointsVue}
-          onChange={(e) => updateField('pointsVue', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('pointsVue', value)}
           placeholder="Narrateur, focalisation..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.pointsVue?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Système des personnages
-        </label>
-        <textarea
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="personnages"
+        defaultLabel="Système des personnages"
+        customization={zoneCustomizations.personnages}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.personnages}
-          onChange={(e) => updateField('personnages', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('personnages', value)}
           placeholder="Personnages principaux..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Registres, tonalités, leitmotive
-        </label>
-        <textarea
-          value={sheet.registres}
-          onChange={(e) => updateField('registres', e.target.value)}
+          theme={theme}
           rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.personnages?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Registres dominants..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="registres"
+        defaultLabel="Registres, tonalités, leitmotive"
+        customization={zoneCustomizations.registres}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.registres}
+          onChange={(value) => updateField('registres', value)}
+          placeholder="Registres dominants..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.registres?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
 
-    <div>
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Rythme narratif
-      </label>
-      <textarea
+    <ZoneContainer
+      zoneId="rythme"
+      defaultLabel="Rythme narratif"
+      customization={zoneCustomizations.rythme}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
+      <RichTextEditor
         value={sheet.rythme}
-        onChange={(e) => updateField('rythme', e.target.value)}
-        rows={3}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: '#ffffff',
-          borderColor: theme.border,
-          color: theme.text
-        }}
+        onChange={(value) => updateField('rythme', value)}
         placeholder="Analyse du rythme..."
+        theme={theme}
+        rows={3}
+        style={{
+          backgroundColor: zoneCustomizations.rythme?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
       />
-    </div>
+    </ZoneContainer>
   </div>
 );
 
@@ -297,63 +357,77 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
   updateCitation, 
   addCitation, 
   removeCitation, 
-  theme 
+  theme,
+  zoneCustomizations,
+  onUpdateZoneCustomization,
+  onDeleteZone,
+  onRestoreZone
 }) => (
   <div className="space-y-6">
     <div className="grid md:grid-cols-2 gap-6 mb-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Figures de style marquantes
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="figures"
+        defaultLabel="Figures de style marquantes"
+        customization={zoneCustomizations.figures}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.figures}
-          onChange={(e) => updateField('figures', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('figures', value)}
           placeholder="Métaphores, comparaisons, etc."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Procédés récurrents
-        </label>
-        <textarea
-          value={sheet.procedes}
-          onChange={(e) => updateField('procedes', e.target.value)}
+          theme={theme}
           rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.figures?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Procédés stylistiques..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="procedes"
+        defaultLabel="Procédés récurrents"
+        customization={zoneCustomizations.procedes}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.procedes}
+          onChange={(value) => updateField('procedes', value)}
+          placeholder="Procédés stylistiques..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.procedes?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
 
-    <div className="mb-6">
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Lexique spécifique / glossaire
-      </label>
-      <textarea
+    <ZoneContainer
+      zoneId="lexique"
+      defaultLabel="Lexique spécifique / glossaire"
+      customization={zoneCustomizations.lexique}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
+      <RichTextEditor
         value={sheet.lexique}
-        onChange={(e) => updateField('lexique', e.target.value)}
-        rows={3}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: '#ffffff',
-          borderColor: theme.border,
-          color: theme.text
-        }}
+        onChange={(value) => updateField('lexique', value)}
         placeholder="Vocabulaire particulier, termes techniques..."
+        theme={theme}
+        rows={3}
+        style={{
+          backgroundColor: zoneCustomizations.lexique?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
       />
-    </div>
+    </ZoneContainer>
 
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -371,7 +445,7 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
       </div>
       <div 
         className="border-2 border-dashed p-5 rounded-lg"
-        style={{ borderColor: theme.border, backgroundColor: 'white' }}
+        style={{ borderColor: theme.border, backgroundColor: 'white', opacity: 1 }}
       >
         {sheet.citations.map((citation, index) => (
           <div key={index} className="flex gap-3 items-start mb-4 last:mb-0">
@@ -384,7 +458,8 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
                 style={{
                   backgroundColor: '#ffffff',
                   borderColor: theme.border,
-                  color: theme.text
+                  color: theme.text,
+                  opacity: 1
                 }}
                 placeholder="« Citation importante... »"
               />
@@ -398,7 +473,8 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
                 style={{
                   backgroundColor: '#ffffff',
                   borderColor: theme.border,
-                  color: theme.text
+                  color: theme.text,
+                  opacity: 1
                 }}
                 placeholder="p. 000"
               />
@@ -419,81 +495,116 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
 );
 
 // Section 3: Problématiques & Enjeux
-export const ProblematiquesEnjeuxSection: React.FC<SectionProps> = ({ sheet, updateField, theme }) => (
+export const ProblematiquesEnjeuxSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme,
+  zoneCustomizations,
+  onUpdateZoneCustomization,
+  onDeleteZone,
+  onRestoreZone
+}) => (
   <div className="space-y-6">
     <div className="grid md:grid-cols-2 gap-6 mb-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Axes critiques principaux
-        </label>
+      <ZoneContainer
+        zoneId="axes"
+        defaultLabel="Axes critiques principaux"
+        customization={zoneCustomizations.axes}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
         <RichTextEditor
           value={sheet.axes}
           onChange={(value) => updateField('axes', value)}
           placeholder="Principales orientations critiques..."
           theme={theme}
           rows={4}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Tensions internes à l'œuvre
-        </label>
-        <textarea
-          value={sheet.tensions}
-          onChange={(e) => updateField('tensions', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.axes?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Contradictions, ambiguïtés..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="tensions"
+        defaultLabel="Tensions internes à l'œuvre"
+        customization={zoneCustomizations.tensions}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.tensions}
+          onChange={(value) => updateField('tensions', value)}
+          placeholder="Contradictions, ambiguïtés..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.tensions?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
 
     <div className="grid md:grid-cols-2 gap-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Lectures possibles / débats critiques
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="lectures"
+        defaultLabel="Lectures possibles / débats critiques"
+        customization={zoneCustomizations.lectures}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.lectures}
-          onChange={(e) => updateField('lectures', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('lectures', value)}
           placeholder="Différentes interprétations..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Intuitions personnelles de lecture
-        </label>
-        <textarea
-          value={sheet.intuitions}
-          onChange={(e) => updateField('intuitions', e.target.value)}
+          theme={theme}
           rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.lectures?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Vos réflexions personnelles..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="intuitions"
+        defaultLabel="Intuitions personnelles de lecture"
+        customization={zoneCustomizations.intuitions}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.intuitions}
+          onChange={(value) => updateField('intuitions', value)}
+          placeholder="Vos réflexions personnelles..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.intuitions?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
   </div>
 );
 
 // Section 4: Images dans l'œuvre
-export const ImagesOeuvreSection: React.FC<SectionProps> = ({ sheet, updateField, theme }) => (
+export const ImagesOeuvreSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme,
+  zoneCustomizations,
+  onUpdateZoneCustomization,
+  onDeleteZone,
+  onRestoreZone
+}) => (
   <div className="space-y-6">
     <div className="mb-6">
       <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
@@ -503,63 +614,82 @@ export const ImagesOeuvreSection: React.FC<SectionProps> = ({ sheet, updateField
     </div>
 
     <div className="grid md:grid-cols-3 gap-4">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Origine / rôle des images
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="images"
+        defaultLabel="Origine / rôle des images"
+        customization={zoneCustomizations.images}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.images}
-          onChange={(e) => updateField('images', e.target.value)}
-          rows={3}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('images', value)}
           placeholder="D'où viennent les images..."
+          theme={theme}
+          rows={3}
+          style={{
+            backgroundColor: zoneCustomizations.images?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Fonction narrative ou symbolique
-        </label>
-        <textarea
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="fonction"
+        defaultLabel="Fonction narrative ou symbolique"
+        customization={zoneCustomizations.fonction}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.fonction}
-          onChange={(e) => updateField('fonction', e.target.value)}
-          rows={3}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('fonction', value)}
           placeholder="Rôle dans le récit..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Références culturelles associées
-        </label>
-        <textarea
-          value={sheet.references}
-          onChange={(e) => updateField('references', e.target.value)}
+          theme={theme}
           rows={3}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.fonction?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Références artistiques..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="references"
+        defaultLabel="Références culturelles associées"
+        customization={zoneCustomizations.references}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.references}
+          onChange={(value) => updateField('references', value)}
+          placeholder="Références artistiques..."
+          theme={theme}
+          rows={3}
+          style={{
+            backgroundColor: zoneCustomizations.references?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
   </div>
 );
 
 // Section 5: Contexte & Perspectives
-export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, updateField, theme }) => (
+export const ContextePerspectivesSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme,
+  zoneCustomizations,
+  onUpdateZoneCustomization,
+  onDeleteZone,
+  onRestoreZone
+}) => (
   <div className="space-y-6">
     <div className="mb-6">
       <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
@@ -569,161 +699,204 @@ export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, upd
     </div>
 
     <div className="grid md:grid-cols-2 gap-6 mb-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Biographie de l'auteur·ice
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="biographie"
+        defaultLabel="Biographie de l'auteur·ice"
+        customization={zoneCustomizations.biographie}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.biographie}
-          onChange={(e) => updateField('biographie', e.target.value)}
-          rows={3}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('biographie', value)}
           placeholder="Éléments biographiques pertinents..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Place de l'œuvre dans son parcours
-        </label>
-        <textarea
-          value={sheet.place}
-          onChange={(e) => updateField('place', e.target.value)}
+          theme={theme}
           rows={3}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.biographie?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Contexte de création..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="place"
+        defaultLabel="Place de l'œuvre dans son parcours"
+        customization={zoneCustomizations.place}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.place}
+          onChange={(value) => updateField('place', value)}
+          placeholder="Contexte de création..."
+          theme={theme}
+          rows={3}
+          style={{
+            backgroundColor: zoneCustomizations.place?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
 
-    <div className="mb-6">
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Courants littéraires / artistiques associés
-      </label>
-      <textarea
+    <ZoneContainer
+      zoneId="courants"
+      defaultLabel="Courants littéraires / artistiques associés"
+      customization={zoneCustomizations.courants}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
+      <RichTextEditor
         value={sheet.courants}
-        onChange={(e) => updateField('courants', e.target.value)}
-        rows={3}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: '#ffffff',
-          borderColor: theme.border,
-          color: theme.text
-        }}
+        onChange={(value) => updateField('courants', value)}
         placeholder="Mouvements, écoles, influences..."
+        theme={theme}
+        rows={3}
+        style={{
+          backgroundColor: zoneCustomizations.courants?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
       />
-    </div>
+    </ZoneContainer>
 
     <div className="grid md:grid-cols-2 gap-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Références historiques, philosophiques, critiques
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="contexte"
+        defaultLabel="Références historiques, philosophiques, critiques"
+        customization={zoneCustomizations.contexte}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.contexte}
-          onChange={(e) => updateField('contexte', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('contexte', value)}
           placeholder="Contexte intellectuel..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Réception critique
-        </label>
-        <textarea
-          value={sheet.reception}
-          onChange={(e) => updateField('reception', e.target.value)}
+          theme={theme}
           rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.contexte?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Accueil de l'œuvre..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="reception"
+        defaultLabel="Réception critique"
+        customization={zoneCustomizations.reception}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.reception}
+          onChange={(value) => updateField('reception', value)}
+          placeholder="Accueil de l'œuvre..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.reception?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
   </div>
 );
 
 // Section 6: Comparatisme
-export const ComparatismeSection: React.FC<SectionProps> = ({ sheet, updateField, theme }) => (
+export const ComparatismeSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme,
+  zoneCustomizations,
+  onUpdateZoneCustomization,
+  onDeleteZone,
+  onRestoreZone
+}) => (
   <div className="space-y-6">
-    <div className="mb-6">
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Œuvres en regard dans le programme
-      </label>
-      <textarea
+    <ZoneContainer
+      zoneId="oeuvres"
+      defaultLabel="Œuvres en regard dans le programme"
+      customization={zoneCustomizations.oeuvres}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
+      <RichTextEditor
         value={sheet.oeuvres}
-        onChange={(e) => updateField('oeuvres', e.target.value)}
-        rows={3}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: '#ffffff',
-          borderColor: theme.border,
-          color: theme.text
-        }}
+        onChange={(value) => updateField('oeuvres', value)}
         placeholder="Autres œuvres du programme..."
+        theme={theme}
+        rows={3}
+        style={{
+          backgroundColor: zoneCustomizations.oeuvres?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
       />
-    </div>
+    </ZoneContainer>
 
     <div className="grid md:grid-cols-2 gap-6">
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Thématiques ou procédés communs
-        </label>
-        <textarea
+      <ZoneContainer
+        zoneId="thematiques"
+        defaultLabel="Thématiques ou procédés communs"
+        customization={zoneCustomizations.thematiques}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
           value={sheet.thematiques}
-          onChange={(e) => updateField('thematiques', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('thematiques', value)}
           placeholder="Points de convergence..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-          Éléments de convergence ou divergence
-        </label>
-        <textarea
-          value={sheet.convergence}
-          onChange={(e) => updateField('convergence', e.target.value)}
+          theme={theme}
           rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: '#ffffff',
-            borderColor: theme.border,
-            color: theme.text
+            backgroundColor: zoneCustomizations.thematiques?.backgroundColor || '#ffffff',
+            opacity: 1
           }}
-          placeholder="Similitudes et différences..."
         />
-      </div>
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="convergence"
+        defaultLabel="Éléments de convergence ou divergence"
+        customization={zoneCustomizations.convergence}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <RichTextEditor
+          value={sheet.convergence}
+          onChange={(value) => updateField('convergence', value)}
+          placeholder="Similitudes et différences..."
+          theme={theme}
+          rows={4}
+          style={{
+            backgroundColor: zoneCustomizations.convergence?.backgroundColor || '#ffffff',
+            opacity: 1
+          }}
+        />
+      </ZoneContainer>
     </div>
   </div>
 );
 
 // Section 7: Annexes
-export const AnnexesSection: React.FC<SectionProps> = ({ sheet, updateField, theme }) => (
+export const AnnexesSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme,
+  zoneCustomizations,
+  onUpdateZoneCustomization,
+  onDeleteZone,
+  onRestoreZone
+}) => (
   <div className="space-y-6">
     <div className="mb-6">
       <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
@@ -732,35 +905,46 @@ export const AnnexesSection: React.FC<SectionProps> = ({ sheet, updateField, the
       <ImageUploadZone label="vos schémas et tableaux" />
     </div>
 
-    <div className="mb-6">
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Glossaire personnel
-      </label>
-      <textarea
+    <ZoneContainer
+      zoneId="glossaire"
+      defaultLabel="Glossaire personnel"
+      customization={zoneCustomizations.glossaire}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
+      <RichTextEditor
         value={sheet.glossaire}
-        onChange={(e) => updateField('glossaire', e.target.value)}
-        rows={4}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: '#ffffff',
-          borderColor: theme.border,
-          color: theme.text
-        }}
+        onChange={(value) => updateField('glossaire', value)}
         placeholder="Définitions, termes techniques..."
+        theme={theme}
+        rows={4}
+        style={{
+          backgroundColor: zoneCustomizations.glossaire?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
       />
-    </div>
+    </ZoneContainer>
 
-    <div>
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Notes ou remarques libres
-      </label>
+    <ZoneContainer
+      zoneId="notes"
+      defaultLabel="Notes ou remarques libres"
+      customization={zoneCustomizations.notes}
+      onUpdateCustomization={onUpdateZoneCustomization}
+      onDeleteZone={onDeleteZone}
+      onRestoreZone={onRestoreZone}
+    >
       <RichTextEditor
         value={sheet.notes}
         onChange={(value) => updateField('notes', value)}
         placeholder="Réflexions supplémentaires, idées..."
         theme={theme}
         rows={6}
+        style={{
+          backgroundColor: zoneCustomizations.notes?.backgroundColor || '#ffffff',
+          opacity: 1
+        }}
       />
-    </div>
+    </ZoneContainer>
   </div>
 );
