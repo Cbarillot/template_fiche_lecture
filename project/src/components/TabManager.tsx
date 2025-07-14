@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDynamicTabs } from '../hooks/useDynamicTabs';
+import { useZoneCustomizations } from '../hooks/useZoneCustomizations';
 import {
   ReadingSheet,
   ResumeArchitectureSection,
@@ -195,6 +196,12 @@ const TabManager: React.FC<TabManagerProps> = ({
   theme
 }) => {
   const { tabs, activeTab, setActiveTab, addTab, deleteTab, updateTab } = useDynamicTabs();
+  const { 
+    getZoneCustomization, 
+    updateZoneCustomization, 
+    deleteZone, 
+    restoreZone 
+  } = useZoneCustomizations();
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -235,13 +242,63 @@ const TabManager: React.FC<TabManagerProps> = ({
       return <div>Loading...</div>;
     }
 
+    // Get all zone customizations for this tab
+    const zoneCustomizations = {
+      // Section 1: Résumé & Architecture
+      titre: getZoneCustomization('titre'),
+      auteur: getZoneCustomization('auteur'),
+      resume: getZoneCustomization('resume'),
+      plan: getZoneCustomization('plan'),
+      temporalites: getZoneCustomization('temporalites'),
+      pointsVue: getZoneCustomization('pointsVue'),
+      personnages: getZoneCustomization('personnages'),
+      registres: getZoneCustomization('registres'),
+      rythme: getZoneCustomization('rythme'),
+      
+      // Section 2: Analyse stylistique
+      figures: getZoneCustomization('figures'),
+      procedes: getZoneCustomization('procedes'),
+      lexique: getZoneCustomization('lexique'),
+      
+      // Section 3: Problématiques & Enjeux
+      axes: getZoneCustomization('axes'),
+      tensions: getZoneCustomization('tensions'),
+      lectures: getZoneCustomization('lectures'),
+      intuitions: getZoneCustomization('intuitions'),
+      
+      // Section 4: Images dans l'œuvre
+      images: getZoneCustomization('images'),
+      fonction: getZoneCustomization('fonction'),
+      references: getZoneCustomization('references'),
+      
+      // Section 5: Contexte & Perspectives
+      biographie: getZoneCustomization('biographie'),
+      place: getZoneCustomization('place'),
+      courants: getZoneCustomization('courants'),
+      contexte: getZoneCustomization('contexte'),
+      reception: getZoneCustomization('reception'),
+      
+      // Section 6: Comparatisme
+      oeuvres: getZoneCustomization('oeuvres'),
+      thematiques: getZoneCustomization('thematiques'),
+      convergence: getZoneCustomization('convergence'),
+      
+      // Section 7: Annexes
+      glossaire: getZoneCustomization('glossaire'),
+      notes: getZoneCustomization('notes'),
+    };
+
     const sectionProps = {
       sheet,
       updateField,
       updateCitation,
       addCitation,
       removeCitation,
-      theme
+      theme,
+      zoneCustomizations,
+      onUpdateZoneCustomization: updateZoneCustomization,
+      onDeleteZone: deleteZone,
+      onRestoreZone: restoreZone
     };
 
     switch (tabId) {
@@ -274,7 +331,8 @@ const TabManager: React.FC<TabManagerProps> = ({
                 style={{
                   backgroundColor: theme?.background || '#f8f9fa',
                   borderColor: theme?.border || '#e9ecef',
-                  color: theme?.text || '#2c3e50'
+                  color: theme?.text || '#2c3e50',
+                  opacity: 1
                 }}
               />
             </div>

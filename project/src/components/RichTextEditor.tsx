@@ -8,6 +8,7 @@ interface RichTextEditorProps {
   theme: any;
   rows?: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -17,6 +18,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   theme,
   rows = 4,
   className = '',
+  style = {},
 }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
@@ -275,12 +277,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         onKeyDown={handleKeyDown}
         className="w-full px-4 py-3 border rounded-b-lg transition-all duration-200 focus:ring-2 focus:ring-opacity-50 focus:outline-none resize-none"
         style={{
-          backgroundColor: '#ffffff',
+          backgroundColor: style.backgroundColor || '#ffffff',
           borderColor: theme.border,
           color: theme.text,
           minHeight: `${rows * 1.5}rem`,
           maxHeight: `${rows * 3}rem`,
           overflowY: 'auto',
+          opacity: style.opacity || 1,
+          ...style,
         }}
         data-placeholder={placeholder}
         suppressContentEditableWarning={true}
