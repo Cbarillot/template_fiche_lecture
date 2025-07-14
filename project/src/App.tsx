@@ -369,147 +369,25 @@ function App() {
 
   const exportToPDF = async () => {
     try {
-      // Créer un conteneur pour le PDF
-      const pdfContainer = document.createElement('div');
-      pdfContainer.style.position = 'fixed';
-      pdfContainer.style.left = '0';
-      pdfContainer.style.top = '0';
-      pdfContainer.style.width = '210mm';
-      pdfContainer.style.padding = '20mm';
-      pdfContainer.style.background = theme.background;
-      pdfContainer.style.color = theme.text;
-      pdfContainer.style.zIndex = '10000';
-      pdfContainer.style.boxSizing = 'border-box';
-      
-      // Chercher le conteneur principal de l'app
-      const appContainer = document.querySelector('.max-w-4xl.mx-auto');
-      if (!appContainer) {
-        alert('Impossible de trouver le contenu à exporter');
+      // Get tab manager element to access tabs
+      const tabManagerElement = document.querySelector('[data-testid="tab-manager"]') as HTMLElement;
+      if (!tabManagerElement) {
+        alert('Impossible de trouver le gestionnaire d\'onglets');
         return;
       }
-      
-      // Créer un clone profond du contenu
-      const element = appContainer.cloneNode(true) as HTMLElement;
-      
-      // Ajouter le titre et l'auteur en haut
-      const header = document.createElement('div');
-      header.style.textAlign = 'center';
-      header.style.marginBottom = '20px';
-      header.style.paddingBottom = '15px';
-      header.style.borderBottom = `2px solid ${theme.primary}`;
-      header.innerHTML = `
-        <h1 style="color: ${theme.primary}; font-size: 24pt; margin: 0 0 10px 0;">
-          Fiche de Lecture
-        </h1>
-        <div style="font-size: 18pt; color: ${theme.text}; margin: 0; font-weight: normal;">
-          ${sheet.titre || 'Sans titre'}
-        </div>
-        ${sheet.auteur ? `<div style="color: #666; font-size: 0.9em; margin-top: 5px;">${sheet.auteur}</div>` : ''}
-      `;
-      
-      // Ajouter l'en-tête et le contenu cloné au conteneur PDF
-      pdfContainer.appendChild(header);
-      pdfContainer.appendChild(element);
-      
-      // Ajouter le conteneur au corps du document
-      document.body.appendChild(pdfContainer);
-      
-      // Attendre que le DOM soit mis à jour
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Options pour html2canvas
-      const options = {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
-        backgroundColor: theme.background,
-        scrollX: 0,
-        scrollY: 0,
-        width: pdfContainer.offsetWidth,
-        height: pdfContainer.scrollHeight,
-        windowWidth: pdfContainer.scrollWidth,
-        windowHeight: pdfContainer.scrollHeight,
-        x: 0,
-        y: 0,
-        onclone: (clonedDoc: Document) => {
-          // S'assurer que les styles sont correctement appliqués
-          const style = document.createElement('style');
-          style.textContent = `
-            * {
-              -webkit-print-color-adjust: exact !important;
-              color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            body {
-              background: ${theme.background} !important;
-              color: ${theme.text} !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100% !important;
-            }
-            .editable:empty::before {
-              color: #999 !important;
-              font-style: italic !important;
-            }
-            .max-w-4xl {
-              box-shadow: none !important;
-              border: none !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100% !important;
-              background: ${theme.background} !important;
-            }
-            .section {
-              break-inside: avoid;
-              page-break-inside: avoid;
-              margin-bottom: 20px !important;
-            }
-            .section-title {
-              color: ${theme.primary} !important;
-              border-bottom-color: ${theme.primary} !important;
-            }
-            .editable, .editable[contenteditable="true"] {
-              min-height: 1.5em !important;
-              border: 1px dashed #ccc !important;
-              padding: 8px !important;
-              margin: 5px 0 !important;
-              border-radius: 4px !important;
-              background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(255,255,255,0.05)'} !important;
-            }
-            .citations {
-              background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(0,0,0,0.05)'} !important;
-              padding: 15px !important;
-              border-radius: 8px !important;
-              margin: 15px 0 !important;
-            }
-            .citation {
-              border-left: 3px solid ${theme.primary} !important;
-              padding-left: 10px !important;
-              margin: 10px 0 !important;
-            }
-            .citation-page {
-              background: ${theme.primary} !important;
-              color: white !important;
-              padding: 2px 8px !important;
-              border-radius: 10px !important;
-              font-size: 0.8em !important;
-              display: inline-block !important;
-              margin-top: 5px !important;
-            }
-            img, .image-upload-zone {
-              max-width: 100% !important;
-              height: auto !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        }
-      };
 
-      // Capturer le contenu avec html2canvas
-      const canvas = await html2canvas(pdfContainer as HTMLElement, options as any);
+      // Get tabs from the useDynamicTabs hook - use the DEFAULT_TABS structure
+      const defaultTabs = [
+        { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
+        { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
+        { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
+        { id: 'images-oeuvre', title: 'Images dans l\'œuvre', icon: '🖼️' },
+        { id: 'contexte-perspectives', title: 'Contexte & Perspectives', icon: '🔍' },
+        { id: 'comparatisme', title: 'Comparatisme', icon: '🔄' },
+        { id: 'annexes', title: 'Annexes', icon: '📂' }
+      ];
 
-      // Créer le PDF
+      // Create PDF document
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -517,35 +395,260 @@ function App() {
         compress: true
       });
 
-      // Calculer les dimensions de l'image pour le PDF
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdfWidth = pdf.internal.pageSize.getWidth() - 20; // Marge de 10mm de chaque côté
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      // PDF page dimensions
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const marginX = 15; // 15mm margins
+      const marginY = 20; // 20mm margins
+      const contentWidth = pageWidth - (marginX * 2);
+      const contentHeight = pageHeight - (marginY * 2);
 
-      // Ajouter la première page
-      pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth, pdfHeight, undefined, 'FAST');
+      // Create temporary container for each tab
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '0';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = `${contentWidth}mm`;
+      tempContainer.style.height = `${contentHeight}mm`;
+      tempContainer.style.backgroundColor = theme.background;
+      tempContainer.style.color = theme.text;
+      tempContainer.style.fontFamily = theme.textFont || 'serif';
+      tempContainer.style.zIndex = '10000';
+      tempContainer.style.padding = '0';
+      tempContainer.style.boxSizing = 'border-box';
+      tempContainer.style.overflow = 'hidden';
 
-      // Gérer les pages supplémentaires si nécessaire
-      const pageHeight = pdf.internal.pageSize.getHeight() - 20; // Marge de 10mm en haut et en bas
-      let heightLeft = pdfHeight - pageHeight + 10; // Ajustement pour la marge
-      let position = 10; // Marge supérieure
-      let page = 1;
-
-      while (heightLeft > 0) {
-        pdf.addPage();
-        position = -((page * pageHeight) - 10); // Ajuster pour la marge supérieure
-        pdf.addImage(imgData, 'PNG', 10, position, pdfWidth, pdfHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
-        page++;
+      // Apply background image if exists
+      if (theme.backgroundImage) {
+        tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
+        tempContainer.style.backgroundSize = 'cover';
+        tempContainer.style.backgroundPosition = 'center';
+        tempContainer.style.backgroundRepeat = 'no-repeat';
       }
 
-      // Télécharger le PDF avec un nom de fichier personnalisé
+      document.body.appendChild(tempContainer);
+
+      // Process each tab
+      for (let i = 0; i < defaultTabs.length; i++) {
+        const tab = defaultTabs[i];
+        const isFirstPage = i === 0;
+
+        // Create page content
+        const pageContent = document.createElement('div');
+        pageContent.style.width = '100%';
+        pageContent.style.height = '100%';
+        pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+        pageContent.style.padding = '20mm';
+        pageContent.style.boxSizing = 'border-box';
+        pageContent.style.position = 'relative';
+        pageContent.style.display = 'flex';
+        pageContent.style.flexDirection = 'column';
+
+        // Add background overlay for better text readability
+        if (theme.backgroundImage) {
+          const overlay = document.createElement('div');
+          overlay.style.position = 'absolute';
+          overlay.style.inset = '0';
+          overlay.style.backgroundColor = theme.background;
+          overlay.style.opacity = String(1 - (theme.backgroundImageOpacity || 0.1));
+          overlay.style.pointerEvents = 'none';
+          pageContent.appendChild(overlay);
+        }
+
+        // Add page header
+        const pageHeader = document.createElement('div');
+        pageHeader.style.position = 'relative';
+        pageHeader.style.zIndex = '10';
+        pageHeader.style.marginBottom = '20px';
+        pageHeader.style.paddingBottom = '15px';
+        pageHeader.style.borderBottom = `2px solid ${theme.primary}`;
+        pageHeader.style.textAlign = 'center';
+
+        if (isFirstPage) {
+          // Full header for first page
+          pageHeader.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+              <span style="font-size: 28px;">📖</span>
+              <h1 style="color: ${theme.primary}; font-size: 24pt; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'serif'};">
+                Fiche de Lecture
+              </h1>
+            </div>
+            <div style="font-size: 18pt; color: ${theme.text}; margin: 0; font-weight: normal; font-family: ${theme.titleFont || 'serif'};">
+              ${sheet.titre || 'Sans titre'}
+            </div>
+            ${sheet.auteur ? `<div style="color: ${theme.textLight}; font-size: 14pt; margin-top: 8px; font-style: italic;">${sheet.auteur}</div>` : ''}
+          `;
+        } else {
+          // Simplified header for subsequent pages
+          pageHeader.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 14pt; color: ${theme.textLight}; font-style: italic;">
+                ${sheet.titre || 'Sans titre'}
+              </div>
+              <div style="font-size: 12pt; color: ${theme.textLight};">
+                Page ${i + 1}
+              </div>
+            </div>
+          `;
+        }
+
+        // Add tab title
+        const tabTitle = document.createElement('div');
+        tabTitle.style.position = 'relative';
+        tabTitle.style.zIndex = '10';
+        tabTitle.style.display = 'flex';
+        tabTitle.style.alignItems = 'center';
+        tabTitle.style.gap = '12px';
+        tabTitle.style.margin = '20px 0';
+        tabTitle.style.padding = '15px 20px';
+        tabTitle.style.backgroundColor = `${theme.primary}15`;
+        tabTitle.style.borderRadius = '10px';
+        tabTitle.style.borderLeft = `4px solid ${theme.primary}`;
+        tabTitle.innerHTML = `
+          <span style="font-size: 24px; min-width: 30px;">${tab.icon}</span>
+          <h2 style="color: ${theme.primary}; font-size: 20pt; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'serif'};">
+            ${tab.title}
+          </h2>
+        `;
+
+        // Add tab content
+        const tabContentDiv = document.createElement('div');
+        tabContentDiv.style.position = 'relative';
+        tabContentDiv.style.zIndex = '10';
+        tabContentDiv.style.flex = '1';
+        tabContentDiv.style.overflow = 'hidden';
+        tabContentDiv.style.fontSize = '12pt';
+        tabContentDiv.style.lineHeight = '1.6';
+
+        // Get actual tab content
+        const actualTabContent = getTabContentForPDF(tab.id);
+        if (actualTabContent) {
+          tabContentDiv.appendChild(actualTabContent);
+        }
+
+        // Add page footer
+        const pageFooter = document.createElement('div');
+        pageFooter.style.position = 'relative';
+        pageFooter.style.zIndex = '10';
+        pageFooter.style.marginTop = '20px';
+        pageFooter.style.paddingTop = '15px';
+        pageFooter.style.borderTop = `1px solid ${theme.border}`;
+        pageFooter.style.textAlign = 'center';
+        pageFooter.style.color = theme.textLight;
+        pageFooter.style.fontSize = '10pt';
+        pageFooter.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>📖 Fiche de Lecture</span>
+            <span>Généré le ${new Date().toLocaleDateString('fr-FR')}</span>
+          </div>
+        `;
+
+        // Assemble page
+        pageContent.appendChild(pageHeader);
+        pageContent.appendChild(tabTitle);
+        pageContent.appendChild(tabContentDiv);
+        pageContent.appendChild(pageFooter);
+
+        // Clear container and add new page content
+        tempContainer.innerHTML = '';
+        tempContainer.appendChild(pageContent);
+
+        // Wait for content to render
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Capture page with html2canvas
+        const canvas = await html2canvas(tempContainer, {
+          width: tempContainer.offsetWidth,
+          height: tempContainer.offsetHeight,
+          backgroundColor: theme.background,
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          onclone: (clonedDoc: Document) => {
+            // Add styles to ensure proper rendering
+            const style = document.createElement('style');
+            style.textContent = `
+              * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .editable, .editable[contenteditable="true"] {
+                min-height: 1.5em !important;
+                border: 1px dashed #ccc !important;
+                padding: 8px !important;
+                margin: 5px 0 !important;
+                border-radius: 4px !important;
+                background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(255,255,255,0.05)'} !important;
+              }
+              .citations {
+                background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(0,0,0,0.05)'} !important;
+                padding: 15px !important;
+                border-radius: 8px !important;
+                margin: 15px 0 !important;
+              }
+              .citation {
+                border-left: 3px solid ${theme.primary} !important;
+                padding-left: 10px !important;
+                margin: 10px 0 !important;
+              }
+              .citation-page {
+                background: ${theme.primary} !important;
+                color: white !important;
+                padding: 2px 8px !important;
+                border-radius: 10px !important;
+                font-size: 0.8em !important;
+                display: inline-block !important;
+                margin-top: 5px !important;
+              }
+              .pdf-section {
+                margin-bottom: 20px !important;
+                padding: 15px !important;
+                background: rgba(255, 255, 255, 0.8) !important;
+                border-radius: 8px !important;
+                border: 1px solid ${theme.border} !important;
+              }
+              .pdf-section-title {
+                color: ${theme.primary} !important;
+                font-size: 14pt !important;
+                font-weight: bold !important;
+                margin-bottom: 10px !important;
+                border-bottom: 1px solid ${theme.primary} !important;
+                padding-bottom: 5px !important;
+              }
+              .pdf-section-content {
+                color: ${theme.text} !important;
+                font-size: 11pt !important;
+                line-height: 1.5 !important;
+                min-height: 40px !important;
+                white-space: pre-wrap !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        });
+
+        // Add page to PDF
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        // Convert canvas to image and add to PDF
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, contentHeight, undefined, 'FAST');
+      }
+
+      // Save PDF
       const fileName = `fiche-lecture-${sheet.titre ? sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'sans-titre'}.pdf`;
       pdf.save(fileName);
-      
-      // Nettoyer
-      document.body.removeChild(pdfContainer);
-      
+
+      // Clean up
+      document.body.removeChild(tempContainer);
+
+      alert(`PDF généré avec succès ! ${defaultTabs.length} pages créées avec design préservé.`);
+
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
       alert('Une erreur est survenue lors de la génération du PDF');
@@ -1046,6 +1149,145 @@ function App() {
       console.error('Error exporting to images:', error);
       alert(`Une erreur est survenue lors de l'export en ${format.toUpperCase()}`);
     }
+  };
+
+  // Helper function to get tab content for PDF export with optimized styling
+  const getTabContentForPDF = (tabId: string): HTMLElement | null => {
+    const contentDiv = document.createElement('div');
+    contentDiv.style.height = '100%';
+    contentDiv.style.overflow = 'hidden';
+    
+    const createPDFSection = (title: string, content: string, isMain = false) => {
+      const section = document.createElement('div');
+      section.className = 'pdf-section';
+      section.style.marginBottom = '20px';
+      section.style.padding = '15px';
+      section.style.backgroundColor = isMain ? `${theme.primary}15` : 'rgba(255, 255, 255, 0.8)';
+      section.style.borderRadius = '8px';
+      section.style.border = `1px solid ${theme.border}`;
+      
+      if (isMain) {
+        section.style.borderLeft = `4px solid ${theme.primary}`;
+      }
+      
+      const titleElement = document.createElement('h3');
+      titleElement.className = 'pdf-section-title';
+      titleElement.style.color = theme.primary;
+      titleElement.style.marginBottom = '10px';
+      titleElement.style.fontSize = '14pt';
+      titleElement.style.fontWeight = 'bold';
+      titleElement.style.fontFamily = theme.titleFont || 'serif';
+      titleElement.style.borderBottom = `1px solid ${theme.primary}`;
+      titleElement.style.paddingBottom = '5px';
+      titleElement.textContent = title;
+      
+      const contentElement = document.createElement('div');
+      contentElement.className = 'pdf-section-content';
+      contentElement.style.color = theme.text;
+      contentElement.style.fontSize = '11pt';
+      contentElement.style.lineHeight = '1.5';
+      contentElement.style.minHeight = '40px';
+      contentElement.style.whiteSpace = 'pre-wrap';
+      contentElement.style.fontFamily = theme.textFont || 'serif';
+      contentElement.textContent = content || 'Non renseigné';
+      
+      section.appendChild(titleElement);
+      section.appendChild(contentElement);
+      return section;
+    };
+    
+    switch (tabId) {
+      case 'resume-architecture':
+        contentDiv.appendChild(createPDFSection('Titre de l\'œuvre', sheet.titre || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Auteur', sheet.auteur || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Résumé détaillé', sheet.resume || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Plan narratif / Architecture', sheet.plan || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Temporalités', sheet.temporalites || 'Non renseigné'));
+        break;
+      case 'analyse-stylistique':
+        contentDiv.appendChild(createPDFSection('Points de vue / Focalisation', sheet.pointsVue || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Système des personnages', sheet.personnages || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Registres, tonalités, leitmotive', sheet.registres || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Rythme narratif', sheet.rythme || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Figures de style', sheet.figures || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Procédés stylistiques', sheet.procedes || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Lexique', sheet.lexique || 'Non renseigné'));
+        break;
+      case 'problematiques-enjeux':
+        contentDiv.appendChild(createPDFSection('Axes d\'analyse', sheet.axes || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Tensions et conflits', sheet.tensions || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Lectures critiques', sheet.lectures || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Intuitions personnelles', sheet.intuitions || 'Non renseigné'));
+        
+        // Add citations section with special styling
+        if (sheet.citations && sheet.citations.some(c => c.text)) {
+          const citationsDiv = document.createElement('div');
+          citationsDiv.className = 'citations';
+          citationsDiv.style.marginBottom = '20px';
+          citationsDiv.style.padding = '15px';
+          citationsDiv.style.backgroundColor = `${theme.secondary}15`;
+          citationsDiv.style.borderRadius = '8px';
+          citationsDiv.style.border = `1px solid ${theme.secondary}30`;
+          citationsDiv.style.borderLeft = `4px solid ${theme.secondary}`;
+          
+          const citationsTitle = document.createElement('h3');
+          citationsTitle.style.color = theme.secondary;
+          citationsTitle.style.marginBottom = '10px';
+          citationsTitle.style.fontSize = '14pt';
+          citationsTitle.style.fontWeight = 'bold';
+          citationsTitle.style.borderBottom = `1px solid ${theme.secondary}`;
+          citationsTitle.style.paddingBottom = '5px';
+          citationsTitle.textContent = 'Citations clés';
+          citationsDiv.appendChild(citationsTitle);
+          
+          sheet.citations.filter(c => c.text).forEach(citation => {
+            const citationBlock = document.createElement('div');
+            citationBlock.className = 'citation';
+            citationBlock.style.marginBottom = '10px';
+            citationBlock.style.padding = '10px';
+            citationBlock.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            citationBlock.style.borderRadius = '6px';
+            citationBlock.style.borderLeft = `3px solid ${theme.secondary}`;
+            citationBlock.style.fontSize = '10pt';
+            citationBlock.style.fontStyle = 'italic';
+            citationBlock.style.lineHeight = '1.4';
+            citationBlock.innerHTML = `
+              <div style="color: ${theme.text}; margin-bottom: 5px;">"${citation.text}"</div>
+              ${citation.page ? `<div style="color: ${theme.textLight}; font-size: 9pt; text-align: right;">— Page ${citation.page}</div>` : ''}
+            `;
+            citationsDiv.appendChild(citationBlock);
+          });
+          
+          contentDiv.appendChild(citationsDiv);
+        }
+        break;
+      case 'images-oeuvre':
+        contentDiv.appendChild(createPDFSection('Images dans l\'œuvre', sheet.images || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Fonction des images', sheet.fonction || 'Non renseigné'));
+        break;
+      case 'contexte-perspectives':
+        contentDiv.appendChild(createPDFSection('Biographie de l\'auteur', sheet.biographie || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Place dans l\'œuvre', sheet.place || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Courants littéraires', sheet.courants || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Contexte historique', sheet.contexte || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Réception critique', sheet.reception || 'Non renseigné'));
+        break;
+      case 'comparatisme':
+        contentDiv.appendChild(createPDFSection('Autres œuvres de l\'auteur', sheet.oeuvres || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Thématiques communes', sheet.thematiques || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Points de convergence', sheet.convergence || 'Non renseigné'));
+        break;
+      case 'annexes':
+        contentDiv.appendChild(createPDFSection('Glossaire', sheet.glossaire || 'Non renseigné', true));
+        contentDiv.appendChild(createPDFSection('Notes personnelles', sheet.notes || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Schémas et cartes', sheet.schemas || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Références', sheet.references || 'Non renseigné'));
+        break;
+      default:
+        contentDiv.appendChild(createPDFSection('Contenu personnalisé', 'Contenu de l\'onglet personnalisé', true));
+    }
+    
+    return contentDiv;
   };
 
   // Helper function to get tab content for export with enhanced styling
