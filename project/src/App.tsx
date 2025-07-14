@@ -4,6 +4,8 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { exportSimple, exportModern, exportWebStyle, exportSimpleWeb, ExportOptions } from './exports';
 import { downloadFile, openFileInNewTab } from './exports/utils';
+import CustomThemeCreator from './components/CustomThemeCreator';
+import { useCustomThemes } from './hooks/useCustomThemes';
 
 // Composant pour l'upload d'images et documents
 const ImageUploadZone = ({ label }: { label: string }) => {
@@ -331,8 +333,11 @@ const themes = {
 };
 
 function App() {
-  const [currentTheme, setCurrentTheme] = useState<keyof typeof themes>('purple');
+  const [currentTheme, setCurrentTheme] = useState<keyof typeof themes | 'custom'>('purple');
+  const [customThemeData, setCustomThemeData] = useState<any>(null);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
+  const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
+  const { customThemes } = useCustomThemes();
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
     auteur: '',
@@ -367,7 +372,7 @@ function App() {
     schemas: ''
   });
 
-  const theme = themes[currentTheme];
+  const theme = currentTheme === 'custom' && customThemeData ? customThemeData : themes[currentTheme as keyof typeof themes];
 
   useEffect(() => {
     const saved = localStorage.getItem('ficheAnalyse');
@@ -668,7 +673,10 @@ function App() {
 
   const ThemeButton = ({ themeKey, isActive }: { themeKey: keyof typeof themes; isActive: boolean }) => (
     <button
-      onClick={() => setCurrentTheme(themeKey)}
+      onClick={() => {
+        setCurrentTheme(themeKey);
+        setCustomThemeData(null);
+      }}
       className={`w-8 h-8 rounded-full border-2 transition-all duration-300 hover:scale-110 ${
         isActive ? 'border-gray-800 scale-125 shadow-lg' : 'border-white/80'
       }`}
@@ -676,6 +684,25 @@ function App() {
       title={themes[themeKey].name}
     />
   );
+
+  const CustomThemeButton = ({ theme, isActive }: { theme: any; isActive: boolean }) => (
+    <button
+      onClick={() => {
+        setCurrentTheme('custom');
+        setCustomThemeData(theme);
+      }}
+      className={`w-8 h-8 rounded-full border-2 transition-all duration-300 hover:scale-110 ${
+        isActive ? 'border-gray-800 scale-125 shadow-lg' : 'border-white/80'
+      }`}
+      style={{ background: theme.gradient }}
+      title={theme.name}
+    />
+  );
+
+  const handleThemeChange = (newTheme: any) => {
+    setCurrentTheme('custom');
+    setCustomThemeData(newTheme);
+  };
 
   const exportToWord = async () => {
     try {
@@ -877,32 +904,90 @@ function App() {
       {isThemeSelectorOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setIsThemeSelectorOpen(false)}>
           <div 
-            className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold mb-6 text-center" style={{ color: theme.text }}>
-              🎨 Choisir un thème
-            </h3>
-            <div className="grid grid-cols-5 gap-4 mb-6">
-              {Object.keys(themes).map((themeKey) => (
-                <div key={themeKey} className="text-center">
-                  <ThemeButton 
-                    themeKey={themeKey as keyof typeof themes} 
-                    isActive={currentTheme === themeKey} 
-                  />
-                  <div className="text-xs mt-2" style={{ color: theme.textLight }}>
-                    {themes[themeKey as keyof typeof themes].name}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold" style={{ color: theme.text }}>
+                🎨 Gestion des thèmes
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)}
+                  className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-80 ${
+                    showCustomThemeCreator ? 'bg-red-600' : 'bg-blue-600'
+                  }`}
+                >
+                  {showCustomThemeCreator ? 'Masquer créateur' : 'Créer un thème'}
+                </button>
+                <button
+                  onClick={() => setIsThemeSelectorOpen(false)}
+                  className="px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-80"
+                  style={{ backgroundColor: theme.primary }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+
+            {showCustomThemeCreator ? (
+              <CustomThemeCreator
+                currentTheme={theme}
+                onThemeChange={handleThemeChange}
+                onClose={() => setShowCustomThemeCreator(false)}
+              />
+            ) : (
+              <>
+                {/* Predefined Themes */}
+                <div className="mb-8">
+                  <h4 className="text-lg font-semibold mb-4" style={{ color: theme.text }}>
+                    Thèmes prédéfinis
+                  </h4>
+                  <div className="grid grid-cols-5 gap-4">
+                    {Object.keys(themes).map((themeKey) => (
+                      <div key={themeKey} className="text-center">
+                        <ThemeButton 
+                          themeKey={themeKey as keyof typeof themes} 
+                          isActive={currentTheme === themeKey && !customThemeData} 
+                        />
+                        <div className="text-xs mt-2" style={{ color: theme.textLight }}>
+                          {themes[themeKey as keyof typeof themes].name}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setIsThemeSelectorOpen(false)}
-              className="w-full py-3 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-80"
-              style={{ backgroundColor: theme.primary }}
-            >
-              Fermer
-            </button>
+
+                {/* Custom Themes */}
+                {customThemes.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold mb-4" style={{ color: theme.text }}>
+                      Thèmes personnalisés
+                    </h4>
+                    <div className="grid grid-cols-5 gap-4">
+                      {customThemes.map((customTheme) => (
+                        <div key={customTheme.id} className="text-center">
+                          <CustomThemeButton 
+                            theme={customTheme} 
+                            isActive={currentTheme === 'custom' && customThemeData?.id === customTheme.id} 
+                          />
+                          <div className="text-xs mt-2" style={{ color: theme.textLight }}>
+                            {customTheme.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customThemes.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Aucun thème personnalisé créé</p>
+                    <p className="text-sm">Cliquez sur "Créer un thème" pour commencer</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
