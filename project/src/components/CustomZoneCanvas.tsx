@@ -10,12 +10,15 @@ import {
   Eye,
   EyeOff,
   Download,
-  Upload
+  Upload,
+  History
 } from 'lucide-react';
 import { useCustomZones } from '../hooks/useCustomZones';
+import { useHistoryManager } from '../hooks/useHistoryManager';
 import { ZoneType } from '../types/zoneTypes';
 import DraggableZone from './DraggableZone';
 import ZoneTypeDropdown from './ZoneTypeDropdown';
+import HistoryPanel from './HistoryPanel';
 
 interface CustomZoneCanvasProps {
   theme?: any;
@@ -50,9 +53,26 @@ const CustomZoneCanvas: React.FC<CustomZoneCanvasProps> = ({
     importZones
   } = useCustomZones();
 
+  const { undo, redo, getHistorySummary } = useHistoryManager();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [showDeletedZones, setShowDeletedZones] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [historySummary, setHistorySummary] = useState(getHistorySummary());
+
+  // Update history summary when it changes
+  useEffect(() => {
+    const updateSummary = () => {
+      setHistorySummary(getHistorySummary());
+    };
+    
+    updateSummary();
+    
+    // Listen for storage changes to update history summary
+    window.addEventListener('storage', updateSummary);
+    return () => window.removeEventListener('storage', updateSummary);
+  }, [getHistorySummary]);
 
   // Grid snap settings
   const gridSize = 20;
@@ -172,6 +192,44 @@ const CustomZoneCanvas: React.FC<CustomZoneCanvasProps> = ({
           >
             <Grid size={16} />
           </button>
+          
+          <button
+            onClick={undo}
+            disabled={!historySummary.canUndo}
+            className={`p-2 rounded-lg transition-colors ${
+              historySummary.canUndo
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`}
+            title="Annuler (Ctrl+Z)"
+          >
+            <Undo2 size={16} />
+          </button>
+          
+          <button
+            onClick={redo}
+            disabled={!historySummary.canRedo}
+            className={`p-2 rounded-lg transition-colors ${
+              historySummary.canRedo
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`}
+            title="Refaire (Ctrl+Y)"
+          >
+            <Redo2 size={16} />
+          </button>
+          
+          <button
+            onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+            className={`p-2 rounded-lg transition-colors ${
+              showHistoryPanel
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={showHistoryPanel ? 'Masquer l\'historique' : 'Afficher l\'historique'}
+          >
+            <History size={16} />
+          </button>
         </div>
         
         <div className="h-6 w-px bg-gray-300 mx-2" />
@@ -228,6 +286,13 @@ const CustomZoneCanvas: React.FC<CustomZoneCanvasProps> = ({
           )}
         </div>
       </div>
+
+      {/* History Panel */}
+      {showHistoryPanel && (
+        <div className="mb-4">
+          <HistoryPanel theme={theme} />
+        </div>
+      )}
 
       {/* Zone Container */}
       <div
@@ -323,7 +388,8 @@ const CustomZoneCanvas: React.FC<CustomZoneCanvasProps> = ({
             </div>
             <div>
               Mode: {isDragMode ? 'Déplacement' : 'Édition'} • 
-              Grille: {showGrid ? 'Activée' : 'Désactivée'}
+              Grille: {showGrid ? 'Activée' : 'Désactivée'} •
+              Historique: {historySummary.total} action{historySummary.total !== 1 ? 's' : ''}
             </div>
           </div>
         </div>

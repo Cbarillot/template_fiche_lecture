@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CustomZone, ZoneType, DEFAULT_CUSTOM_ZONE, ZONE_TYPE_CONFIGS } from '../types/zoneTypes';
+import { useHistoryManager } from './useHistoryManager';
 
 const CUSTOM_ZONES_STORAGE_KEY = 'customZones';
 
@@ -7,6 +8,7 @@ export const useCustomZones = () => {
   const [customZones, setCustomZones] = useState<CustomZone[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [isDragMode, setIsDragMode] = useState(false);
+  const { addToHistory, isUndoRedoOperation } = useHistoryManager();
 
   // Load custom zones from localStorage
   useEffect(() => {
@@ -29,6 +31,33 @@ export const useCustomZones = () => {
         console.error('Error loading custom zones:', error);
       }
     }
+  }, []);
+
+  // Listen for storage events to update zones when history changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem(CUSTOM_ZONES_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const zones = parsed.map((zone: any) => ({
+            ...zone,
+            createdAt: new Date(zone.createdAt),
+            updatedAt: new Date(zone.updatedAt),
+            uploadedFiles: zone.uploadedFiles?.map((file: any) => ({
+              ...file,
+              uploadDate: new Date(file.uploadDate)
+            })) || []
+          }));
+          setCustomZones(zones);
+        } catch (error) {
+          console.error('Error loading custom zones from storage event:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Save custom zones to localStorage
@@ -58,35 +87,129 @@ export const useCustomZones = () => {
 
     setCustomZones(prev => [...prev, newZone]);
     setSelectedZoneId(newZone.id);
+
+    // Add to history
+    if (!isUndoRedoOperation) {
+      addToHistory({
+        type: 'create',
+        description: `Créer zone "${newZone.title}"`,
+        target: { type: 'zone', id: newZone.id },
+        after: newZone
+      });
+    }
+
     return newZone;
   };
 
   const updateZone = (zoneId: string, updates: Partial<CustomZone>) => {
+    const oldZone = customZones.find(zone => zone.id === zoneId);
+    if (!oldZone) return;
+
+    const updatedZone = { ...oldZone, ...updates, updatedAt: new Date() };
+    
     setCustomZones(prev => prev.map(zone => 
-      zone.id === zoneId 
-        ? { ...zone, ...updates, updatedAt: new Date() }
-        : zone
+      zone.id === zoneId ? updatedZone : zone
     ));
+
+    // Add to history based on update type
+    if (!isUndoRedoOperation) {
+      if (updates.content !== undefined) {
+        addToHistory({
+          type: 'content',
+          description: `Modifier contenu de "${oldZone.title}"`,
+          target: { type: 'zone', id: zoneId },
+          before: { content: oldZone.content },
+          after: { content: updates.content }
+        });
+      } else if (updates.title !== undefined) {
+        addToHistory({
+          type: 'rename',
+          description: `Renommer "${oldZone.title}" en "${updates.title}"`,
+          target: { type: 'zone', id: zoneId },
+          before: { title: oldZone.title },
+          after: { title: updates.title }
+        });
+      }
+    }
   };
 
   const moveZone = (zoneId: string, newPosition: { x: number; y: number }) => {
+    const oldZone = customZones.find(zone => zone.id === zoneId);
+    if (!oldZone) return;
+
     updateZone(zoneId, { position: newPosition });
+
+    // Add to history
+    if (!isUndoRedoOperation) {
+      addToHistory({
+        type: 'move',
+        description: `Déplacer "${oldZone.title}"`,
+        target: { type: 'zone', id: zoneId },
+        before: { position: oldZone.position },
+        after: { position: newPosition }
+      });
+    }
   };
 
   const resizeZone = (zoneId: string, newSize: { width: number; height: number }) => {
+    const oldZone = customZones.find(zone => zone.id === zoneId);
+    if (!oldZone) return;
+
     updateZone(zoneId, { size: newSize });
+
+    // Add to history
+    if (!isUndoRedoOperation) {
+      addToHistory({
+        type: 'resize',
+        description: `Redimensionner "${oldZone.title}"`,
+        target: { type: 'zone', id: zoneId },
+        before: { size: oldZone.size },
+        after: { size: newSize }
+      });
+    }
   };
 
   const deleteZone = (zoneId: string) => {
+    const oldZone = customZones.find(zone => zone.id === zoneId);
+    if (!oldZone) return;
+
     updateZone(zoneId, { isDeleted: true, isVisible: false });
+
+    // Add to history
+    if (!isUndoRedoOperation) {
+      addToHistory({
+        type: 'delete',
+        description: `Supprimer "${oldZone.title}"`,
+        target: { type: 'zone', id: zoneId },
+        before: oldZone
+      });
+    }
   };
 
   const restoreZone = (zoneId: string) => {
+    const oldZone = customZones.find(zone => zone.id === zoneId);
+    if (!oldZone) return;
+
     updateZone(zoneId, { isDeleted: false, isVisible: true });
+
+    // Add to history
+    if (!isUndoRedoOperation) {
+      addToHistory({
+        type: 'restore',
+        description: `Restaurer "${oldZone.title}"`,
+        target: { type: 'zone', id: zoneId },
+        before: oldZone
+      });
+    }
   };
 
   const permanentlyDeleteZone = (zoneId: string) => {
+    const oldZone = customZones.find(zone => zone.id === zoneId);
+    if (!oldZone) return;
+
     setCustomZones(prev => prev.filter(zone => zone.id !== zoneId));
+
+    // Note: Permanent deletion is not added to history as it cannot be undone
   };
 
   const duplicateZone = (zoneId: string): CustomZone | null => {
@@ -107,6 +230,17 @@ export const useCustomZones = () => {
     };
 
     setCustomZones(prev => [...prev, duplicatedZone]);
+
+    // Add to history
+    if (!isUndoRedoOperation) {
+      addToHistory({
+        type: 'create',
+        description: `Dupliquer "${originalZone.title}"`,
+        target: { type: 'zone', id: duplicatedZone.id },
+        after: duplicatedZone
+      });
+    }
+
     return duplicatedZone;
   };
 
@@ -140,6 +274,8 @@ export const useCustomZones = () => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer toutes les zones personnalisées ?')) {
       setCustomZones([]);
       setSelectedZoneId(null);
+      
+      // Note: Clearing all zones is not added to history as it's a destructive operation
     }
   };
 
