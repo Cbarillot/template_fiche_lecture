@@ -207,6 +207,27 @@ interface ReadingSheet {
   schemas: string;
 }
 
+// Decorative components for themes
+const BulletDecorations = ({ theme }: { theme: any }) => (
+  <div className="fixed inset-0 pointer-events-none z-0">
+    <div className="absolute top-10 left-10 w-8 h-8 rounded-full opacity-20 animate-pulse" style={{ backgroundColor: theme.primary }}></div>
+    <div className="absolute top-32 right-20 w-6 h-6 rounded-full opacity-15 animate-pulse" style={{ backgroundColor: theme.secondary, animationDelay: '0.5s' }}></div>
+    <div className="absolute bottom-20 left-20 w-4 h-4 rounded-full opacity-25 animate-pulse" style={{ backgroundColor: theme.accent, animationDelay: '1s' }}></div>
+    <div className="absolute bottom-40 right-10 w-10 h-10 rounded-full opacity-10 animate-pulse" style={{ backgroundColor: theme.primary, animationDelay: '1.5s' }}></div>
+    <div className="absolute top-1/2 left-1/2 w-6 h-6 rounded-full opacity-20 animate-pulse" style={{ backgroundColor: theme.secondary, animationDelay: '2s' }}></div>
+  </div>
+);
+
+const VintageDecorations = ({ theme }: { theme: any }) => (
+  <div className="fixed inset-0 pointer-events-none z-0">
+    <div className="absolute top-16 left-16 w-12 h-12 border-2 opacity-15 rotate-45 animate-spin" style={{ borderColor: theme.primary, animationDuration: '20s' }}></div>
+    <div className="absolute top-40 right-24 w-8 h-8 rounded-full opacity-20 animate-bounce" style={{ backgroundColor: theme.secondary, animationDuration: '3s' }}></div>
+    <div className="absolute bottom-32 left-12 w-16 h-1 opacity-25 animate-pulse" style={{ backgroundColor: theme.accent, animationDelay: '1s' }}></div>
+    <div className="absolute bottom-16 right-16 w-10 h-10 opacity-15 rotate-12 animate-pulse" style={{ backgroundColor: theme.primary, animationDelay: '2s' }}></div>
+    <div className="absolute top-1/3 right-1/3 w-6 h-6 rounded-full opacity-20 animate-pulse" style={{ backgroundColor: theme.secondary, animationDelay: '3s' }}></div>
+  </div>
+);
+
 const themes = {
   purple: {
     name: 'Violet',
@@ -327,6 +348,34 @@ const themes = {
     textLight: '#6c757d',
     border: '#fef7cd',
     gradient: 'linear-gradient(135deg, #fff3cd 0%, #ffecb3 100%)'
+  },
+  bulletJournal: {
+    name: 'Bullet Journal',
+    primary: '#F9A825',
+    secondary: '#E57373',
+    accent: '#4FC3F7',
+    background: '#FFFDF7',
+    card: '#ffffff',
+    text: '#444444',
+    textLight: '#666666',
+    border: '#f0f0f0',
+    gradient: 'linear-gradient(135deg, #F9A825 0%, #E57373 100%)',
+    titleFont: 'Caveat, cursive',
+    textFont: 'Quicksand, sans-serif'
+  },
+  livreVintage: {
+    name: 'Livre Vintage',
+    primary: '#8D6E63',
+    secondary: '#C5A880',
+    accent: '#A1887F',
+    background: '#FAF3E0',
+    card: '#ffffff',
+    text: '#3B3A30',
+    textLight: '#5D4E37',
+    border: '#E0D4B8',
+    gradient: 'linear-gradient(135deg, #8D6E63 0%, #C5A880 100%)',
+    titleFont: 'Playfair Display, serif',
+    textFont: 'EB Garamond, serif'
   }
 };
 
@@ -860,19 +909,42 @@ function App() {
     }
   };
 
+  // Generate background patterns based on theme
+  const getBackgroundPattern = (themeName: string) => {
+    if (themeName === 'bulletJournal') {
+      // SVG pattern with colorful circles for Bullet Journal
+      return `
+        url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><pattern id='bulletPattern' patternUnits='userSpaceOnUse' width='40' height='40'><rect width='40' height='40' fill='transparent'/><circle cx='10' cy='10' r='2' fill='${encodeURIComponent(theme.primary)}' opacity='0.1'/><circle cx='30' cy='20' r='1.5' fill='${encodeURIComponent(theme.secondary)}' opacity='0.15'/><circle cx='20' cy='35' r='1' fill='${encodeURIComponent(theme.accent)}' opacity='0.2'/></pattern></defs><rect width='100' height='100' fill='url(%23bulletPattern)'/></svg>")
+      `;
+    } else if (themeName === 'livreVintage') {
+      // SVG pattern with geometric shapes for Vintage
+      return `
+        url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><pattern id='vintagePattern' patternUnits='userSpaceOnUse' width='60' height='60'><rect width='60' height='60' fill='transparent'/><rect x='10' y='10' width='8' height='8' fill='${encodeURIComponent(theme.primary)}' opacity='0.08' transform='rotate(45 14 14)'/><circle cx='45' cy='30' r='3' fill='${encodeURIComponent(theme.secondary)}' opacity='0.12'/><line x1='5' y1='50' x2='25' y2='50' stroke='${encodeURIComponent(theme.accent)}' stroke-width='1' opacity='0.1'/></pattern></defs><rect width='100' height='100' fill='url(%23vintagePattern)'/></svg>")
+      `;
+    } else {
+      // Default grid pattern for other themes
+      return `
+        linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)
+      `;
+    }
+  };
+
   return (
     <div 
-      className="min-h-screen font-serif transition-all duration-300"
+      className="min-h-screen transition-all duration-300"
       style={{ 
         backgroundColor: theme.background,
-        backgroundImage: `
-          linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)
-        `,
-        backgroundSize: '20px 20px',
-        color: theme.text
+        backgroundImage: getBackgroundPattern(currentTheme),
+        backgroundSize: currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px',
+        color: theme.text,
+        fontFamily: theme.textFont || 'serif'
       }}
     >
+      {/* Theme-specific decorations */}
+      {currentTheme === 'bulletJournal' && <BulletDecorations theme={theme} />}
+      {currentTheme === 'livreVintage' && <VintageDecorations theme={theme} />}
+
       {/* Theme Controls */}
       {isThemeSelectorOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setIsThemeSelectorOpen(false)}>
@@ -921,10 +993,10 @@ function App() {
               backgroundRepeat: 'repeat'
             }}
           />
-          <h1 className="text-4xl font-bold mb-2 relative z-10">
+          <h1 className="text-4xl font-bold mb-2 relative z-10" style={{ fontFamily: theme.titleFont || 'serif' }}>
               📖 Fiche de Lecture
             </h1>
-            <h2 className="text-2xl font-normal relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+            <h2 className="text-2xl font-normal relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)', fontFamily: theme.titleFont || 'serif' }}>
               {sheet.titre || 'Titre de l\'œuvre à saisir'}
             </h2>
         </div>
@@ -1033,7 +1105,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               📘 Résumé & Architecture
             </h2>
             <div 
@@ -1223,7 +1295,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               🖋️ Analyse stylistique / de détail
             </h2>
             <div 
@@ -1358,7 +1430,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               🧠 Problématiques & Enjeux
             </h2>
             <div 
@@ -1451,7 +1523,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               🖼️ Images dans l'œuvre
             </h2>
             <div 
@@ -1540,7 +1612,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               🔍 Contexte & Perspectives
             </h2>
             <div 
@@ -1658,7 +1730,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               🔄 Comparatisme
             </h2>
             <div 
@@ -1732,7 +1804,7 @@ function App() {
             className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
             style={{ borderColor: theme.primary }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
               📂 Annexes
             </h2>
             <div 
