@@ -424,6 +424,14 @@ function App() {
         tempContainer.style.backgroundSize = 'cover';
         tempContainer.style.backgroundPosition = 'center';
         tempContainer.style.backgroundRepeat = 'no-repeat';
+        tempContainer.style.backgroundAttachment = 'fixed';
+      } else {
+        // For predefined themes, apply background pattern
+        const backgroundPattern = getBackgroundPattern(currentTheme);
+        tempContainer.style.backgroundImage = backgroundPattern;
+        tempContainer.style.backgroundSize = currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px';
+        tempContainer.style.backgroundPosition = '0 0';
+        tempContainer.style.backgroundRepeat = 'repeat';
       }
 
       document.body.appendChild(tempContainer);
@@ -437,7 +445,7 @@ function App() {
         const pageContent = document.createElement('div');
         pageContent.style.width = '100%';
         pageContent.style.height = '100%';
-        pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+        pageContent.style.backgroundColor = theme.backgroundImage ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.98)';
         pageContent.style.padding = '20mm';
         pageContent.style.boxSizing = 'border-box';
         pageContent.style.position = 'relative';
@@ -450,7 +458,7 @@ function App() {
           overlay.style.position = 'absolute';
           overlay.style.inset = '0';
           overlay.style.backgroundColor = theme.background;
-          overlay.style.opacity = String(1 - (theme.backgroundImageOpacity || 0.1));
+          overlay.style.opacity = String(Math.min(0.8, 1 - (theme.backgroundImageOpacity || 0.1)));
           overlay.style.pointerEvents = 'none';
           pageContent.appendChild(overlay);
         }
@@ -474,16 +482,17 @@ function App() {
               </h1>
             </div>
             <div style="font-size: 18pt; color: ${theme.text}; margin: 0; font-weight: normal; font-family: ${theme.titleFont || 'serif'};">
-              ${sheet.titre || 'Sans titre'}
+              ${sheet.auteur && sheet.titre ? `${sheet.auteur} - ${sheet.titre}` : 
+                sheet.titre || 'Sans titre'}
             </div>
-            ${sheet.auteur ? `<div style="color: ${theme.textLight}; font-size: 14pt; margin-top: 8px; font-style: italic;">${sheet.auteur}</div>` : ''}
           `;
         } else {
           // Simplified header for subsequent pages
           pageHeader.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div style="font-size: 14pt; color: ${theme.textLight}; font-style: italic;">
-                ${sheet.titre || 'Sans titre'}
+                ${sheet.auteur && sheet.titre ? `${sheet.auteur} - ${sheet.titre}` : 
+                  sheet.titre || 'Sans titre'}
               </div>
               <div style="font-size: 12pt; color: ${theme.textLight};">
                 Page ${i + 1}
@@ -975,15 +984,23 @@ function App() {
         tempContainer.style.backgroundPosition = 'center';
         tempContainer.style.backgroundRepeat = 'no-repeat';
         tempContainer.style.position = 'relative';
+        tempContainer.style.backgroundAttachment = 'fixed';
         
         // Add overlay for background opacity
         const bgOverlay = document.createElement('div');
         bgOverlay.style.position = 'absolute';
         bgOverlay.style.inset = '0';
         bgOverlay.style.backgroundColor = theme.background;
-        bgOverlay.style.opacity = String(1 - (theme.backgroundImageOpacity || 0.1));
+        bgOverlay.style.opacity = String(Math.min(0.8, 1 - (theme.backgroundImageOpacity || 0.1)));
         bgOverlay.style.pointerEvents = 'none';
         tempContainer.appendChild(bgOverlay);
+      } else {
+        // For predefined themes, apply background pattern
+        const backgroundPattern = getBackgroundPattern(currentTheme);
+        tempContainer.style.backgroundImage = backgroundPattern;
+        tempContainer.style.backgroundSize = currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px';
+        tempContainer.style.backgroundPosition = '0 0';
+        tempContainer.style.backgroundRepeat = 'repeat';
       }
       
       document.body.appendChild(tempContainer);
@@ -1029,9 +1046,9 @@ function App() {
             </h1>
           </div>
           <div style="font-size: 18px; color: ${theme.text}; margin: 0; font-weight: normal;">
-            ${sheet.titre || 'Sans titre'}
+            ${sheet.auteur && sheet.titre ? `${sheet.auteur} - ${sheet.titre}` : 
+              sheet.titre || 'Sans titre'}
           </div>
-          ${sheet.auteur ? `<div style="color: ${theme.textLight}; font-size: 14px; margin-top: 8px; font-style: italic;">${sheet.auteur}</div>` : ''}
         `;
         tabContent.appendChild(brandingHeader);
         
@@ -1187,9 +1204,15 @@ function App() {
       contentElement.style.fontSize = '11pt';
       contentElement.style.lineHeight = '1.5';
       contentElement.style.minHeight = '40px';
-      contentElement.style.whiteSpace = 'pre-wrap';
       contentElement.style.fontFamily = theme.textFont || 'serif';
-      contentElement.textContent = content || 'Non renseigné';
+      
+      // Handle HTML content or plain text
+      if (content && content.includes('<')) {
+        contentElement.innerHTML = content;
+      } else {
+        contentElement.style.whiteSpace = 'pre-wrap';
+        contentElement.textContent = content || 'Non renseigné';
+      }
       
       section.appendChild(titleElement);
       section.appendChild(contentElement);
@@ -1322,9 +1345,15 @@ function App() {
       contentElement.style.fontSize = '16px';
       contentElement.style.lineHeight = '1.6';
       contentElement.style.minHeight = '120px';
-      contentElement.style.whiteSpace = 'pre-wrap';
       contentElement.style.fontFamily = theme.textFont || 'serif';
-      contentElement.textContent = content || 'Non renseigné';
+      
+      // Handle HTML content or plain text
+      if (content && content.includes('<')) {
+        contentElement.innerHTML = content;
+      } else {
+        contentElement.style.whiteSpace = 'pre-wrap';
+        contentElement.textContent = content || 'Non renseigné';
+      }
       
       section.appendChild(titleElement);
       section.appendChild(contentElement);
@@ -1589,7 +1618,8 @@ function App() {
               📖 Fiche de Lecture
             </h1>
             <h2 className="text-2xl font-normal relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)', fontFamily: theme.titleFont || 'serif' }}>
-              {sheet.titre || 'Titre de l\'œuvre à saisir'}
+              {sheet.auteur && sheet.titre ? `${sheet.auteur} - ${sheet.titre}` : 
+               sheet.titre || 'Titre de l\'œuvre à saisir'}
             </h2>
         </div>
 
