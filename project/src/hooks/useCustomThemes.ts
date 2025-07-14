@@ -15,6 +15,8 @@ export interface CustomTheme {
   gradient: string;
   titleFont?: string;
   textFont?: string;
+  backgroundImage?: string;
+  backgroundImageOpacity?: number;
   createdAt: Date;
 }
 

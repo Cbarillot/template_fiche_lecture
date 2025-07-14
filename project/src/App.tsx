@@ -1,87 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Camera, Save, Printer, Link } from 'lucide-react';
+import { Plus, Trash2, Save, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 import { exportSimple, exportModern, exportWebStyle, exportSimpleWeb, ExportOptions } from './exports';
 import { downloadFile, openFileInNewTab } from './exports/utils';
 import CustomThemeCreator from './components/CustomThemeCreator';
+import TabManager from './components/TabManager';
 import { useCustomThemes } from './hooks/useCustomThemes';
+import { ReadingSheet } from './components/sections/SectionComponents';
 
-// Composant pour l'upload d'images et documents
-const ImageUploadZone = ({ label }: { label: string }) => {
-  const [files, setFiles] = useState<File[]>([]);
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    setFiles(prev => [...prev, ...selectedFiles]);
-  };
-
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getFileIcon = (file: File) => {
-    if (file.type.startsWith('image/')) return '🖼️';
-    if (file.type === 'application/pdf') return '📄';
-    if (file.type.includes('word')) return '📝';
-    if (file.type.includes('text')) return '📋';
-    return '📎';
-  };
-
-  return (
-    <div className="border-2 border-dashed rounded-lg p-4 transition-all duration-200 hover:border-opacity-80 cursor-pointer"
-         style={{ borderColor: 'var(--primary-color, #667eea)', backgroundColor: 'rgba(102, 126, 234, 0.05)' }}>
-      <input
-        type="file"
-        multiple
-        accept="image/*,.pdf,.doc,.docx,.txt"
-        onChange={handleFileSelect}
-        className="hidden"
-        id={`file-input-${label.replace(/\s+/g, '-')}`}
-      />
-      <label htmlFor={`file-input-${label.replace(/\s+/g, '-')}`} className="cursor-pointer">
-        <div className="text-center">
-          <Camera className="mx-auto mb-2 opacity-60" size={24} />
-          <p className="text-sm text-gray-600">
-            📎 Cliquez pour ajouter {label}
-          </p>
-        </div>
-      </label>
-      
-      {files.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {files.map((file, index) => (
-            <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
-              <div className="flex items-center gap-2">
-                <span>{getFileIcon(file)}</span>
-                <div>
-                  <p className="text-sm font-medium">{file.name}</p>
-                  <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => removeFile(index)}
-                className="text-red-500 hover:text-red-700 p-1"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Composant pour la gestion des liens
+// Link Manager Component
 const LinkManager = ({ sectionKey }: { sectionKey: string }) => {
   const [links, setLinks] = useState<Array<{ title: string; url: string }>>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -162,52 +91,13 @@ const LinkManager = ({ sectionKey }: { sectionKey: string }) => {
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 w-full justify-center"
         >
-          <Link size={16} />
+          <Plus size={16} />
           Ajouter un lien
         </button>
       )}
     </div>
   );
 };
-
-interface Citation {
-  text: string;
-  page: string;
-}
-
-interface ReadingSheet {
-  titre: string;
-  auteur: string;
-  resume: string;
-  plan: string;
-  temporalites: string;
-  pointsVue: string;
-  personnages: string;
-  registres: string;
-  rythme: string;
-  figures: string;
-  procedes: string;
-  lexique: string;
-  citations: Citation[];
-  axes: string;
-  tensions: string;
-  lectures: string;
-  intuitions: string;
-  images: string;
-  fonction: string;
-  references: string;
-  biographie: string;
-  place: string;
-  courants: string;
-  contexte: string;
-  reception: string;
-  oeuvres: string;
-  thematiques: string;
-  convergence: string;
-  glossaire: string;
-  notes: string;
-  schemas: string;
-}
 
 // Decorative components for themes
 const BulletDecorations = ({ theme }: { theme: any }) => (
@@ -387,6 +277,7 @@ function App() {
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   const { customThemes } = useCustomThemes();
+  
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
     auteur: '',
@@ -936,6 +827,255 @@ function App() {
     }
   };
 
+  // Export to JPG/PNG functions
+  const exportToImages = async (format: 'jpeg' | 'png') => {
+    try {
+      const zip = new JSZip();
+      
+      // Get tab manager component to access tabs
+      const tabManagerElement = document.querySelector('[data-testid="tab-manager"]') as HTMLElement;
+      if (!tabManagerElement) {
+        alert('Impossible de trouver le gestionnaire d\'onglets');
+        return;
+      }
+
+      // Get tabs from the useDynamicTabs hook - we need to access the actual tab data
+      // For now, we'll use the default tabs structure
+      const defaultTabs = [
+        { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
+        { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
+        { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
+        { id: 'images-oeuvre', title: 'Images dans l\'œuvre', icon: '🖼️' },
+        { id: 'contexte-perspectives', title: 'Contexte & Perspectives', icon: '🔍' },
+        { id: 'comparatisme', title: 'Comparatisme', icon: '🔄' },
+        { id: 'annexes', title: 'Annexes', icon: '📂' }
+      ];
+
+      // Create a temporary container for capturing tab content
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '0';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '1200px';
+      tempContainer.style.minHeight = '800px';
+      tempContainer.style.backgroundColor = theme.background;
+      tempContainer.style.color = theme.text;
+      tempContainer.style.fontFamily = theme.textFont || 'serif';
+      tempContainer.style.zIndex = '10000';
+      tempContainer.style.padding = '40px';
+      tempContainer.style.boxSizing = 'border-box';
+      
+      // Apply background image if exists
+      if (theme.backgroundImage) {
+        tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
+        tempContainer.style.backgroundSize = 'cover';
+        tempContainer.style.backgroundPosition = 'center';
+        tempContainer.style.backgroundBlendMode = 'overlay';
+        tempContainer.style.backgroundRepeat = 'no-repeat';
+      }
+      
+      document.body.appendChild(tempContainer);
+
+      // For each tab, capture it as an image
+      for (let i = 0; i < defaultTabs.length; i++) {
+        const tab = defaultTabs[i];
+        
+        // Create tab content
+        const tabContent = document.createElement('div');
+        tabContent.style.width = '100%';
+        tabContent.style.minHeight = '720px';
+        tabContent.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+        tabContent.style.padding = '30px';
+        tabContent.style.borderRadius = '10px';
+        tabContent.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        
+        // Add tab header
+        const tabHeader = document.createElement('div');
+        tabHeader.style.borderBottom = `2px solid ${theme.primary}`;
+        tabHeader.style.paddingBottom = '20px';
+        tabHeader.style.marginBottom = '30px';
+        tabHeader.style.display = 'flex';
+        tabHeader.style.alignItems = 'center';
+        tabHeader.style.gap = '10px';
+        
+        const tabIcon = document.createElement('span');
+        tabIcon.style.fontSize = '24px';
+        tabIcon.textContent = tab.icon;
+        
+        const tabTitle = document.createElement('h1');
+        tabTitle.style.fontSize = '24px';
+        tabTitle.style.fontWeight = 'bold';
+        tabTitle.style.color = theme.primary;
+        tabTitle.style.margin = '0';
+        tabTitle.textContent = tab.title;
+        
+        tabHeader.appendChild(tabIcon);
+        tabHeader.appendChild(tabTitle);
+        tabContent.appendChild(tabHeader);
+        
+        // Add tab body content
+        const tabBody = document.createElement('div');
+        tabBody.style.lineHeight = '1.6';
+        
+        // Get the actual tab content based on tab ID
+        const actualTabContent = getTabContentForExport(tab.id);
+        if (actualTabContent) {
+          tabBody.appendChild(actualTabContent);
+        }
+        
+        tabContent.appendChild(tabBody);
+        
+        // Clear previous content and add new tab content
+        tempContainer.innerHTML = '';
+        tempContainer.appendChild(tabContent);
+        
+        // Wait for content to render
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Capture the tab as image
+        const canvas = await html2canvas(tempContainer, {
+          width: 1200,
+          height: 800,
+          backgroundColor: theme.background,
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+        
+        // Convert canvas to blob
+        const blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+          }, `image/${format}`, format === 'jpeg' ? 0.9 : 1.0);
+        });
+        
+        // Add to zip
+        const tabName = tab.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const fileName = `${String(i + 1).padStart(2, '0')}-${tabName}.${format}`;
+        zip.file(fileName, blob);
+      }
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
+      
+      // Generate and download zip
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const fileName = `fiche-lecture-${sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled'}-${format}.zip`;
+      downloadFile(zipBlob, fileName);
+      
+      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées.`);
+      
+    } catch (error) {
+      console.error('Error exporting to images:', error);
+      alert(`Une erreur est survenue lors de l'export en ${format.toUpperCase()}`);
+    }
+  };
+
+  // Helper function to get tab content for export
+  const getTabContentForExport = (tabId: string): HTMLElement | null => {
+    // Create a simplified version of the tab content for export
+    const contentDiv = document.createElement('div');
+    
+    switch (tabId) {
+      case 'resume-architecture':
+        contentDiv.innerHTML = `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Titre de l'œuvre</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; margin: 0;">
+              ${sheet.titre || 'Non renseigné'}
+            </p>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Auteur</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; margin: 0;">
+              ${sheet.auteur || 'Non renseigné'}
+            </p>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Résumé</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 150px; margin: 0; white-space: pre-wrap;">
+              ${sheet.resume || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'analyse-stylistique':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Analyse stylistique</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.analyseStyleistique || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'problematiques-enjeux':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Problématiques et enjeux</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.problematiquesEnjeux || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'images-oeuvre':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Images dans l'œuvre</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.imagesOeuvre || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'contexte-perspectives':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Contexte et perspectives</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.contextePerspectives || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'comparatisme':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Comparatisme</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.comparatisme || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      case 'annexes':
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Annexes</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0; white-space: pre-wrap;">
+              ${sheet.annexes || 'Non renseigné'}
+            </p>
+          </div>
+        `;
+        break;
+      default:
+        contentDiv.innerHTML = `
+          <div>
+            <h3 style="color: ${theme.primary}; margin-bottom: 10px; font-size: 18px;">Contenu personnalisé</h3>
+            <p style="border: 1px solid ${theme.border}; padding: 15px; border-radius: 8px; background: ${theme.background}; min-height: 300px; margin: 0;">
+              Contenu de l'onglet personnalisé
+            </p>
+          </div>
+        `;
+    }
+    
+    return contentDiv;
+  };
+
+  const exportToJPG = () => exportToImages('jpeg');
+  const exportToPNG = () => exportToImages('png');
+
   // Generate background patterns based on theme
   const getBackgroundPattern = (themeName: string) => {
     if (themeName === 'bulletJournal') {
@@ -962,12 +1102,31 @@ function App() {
       className="min-h-screen transition-all duration-300"
       style={{ 
         backgroundColor: theme.background,
-        backgroundImage: getBackgroundPattern(currentTheme),
-        backgroundSize: currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px',
+        backgroundImage: theme.backgroundImage ? 
+          `url(${theme.backgroundImage}), ${getBackgroundPattern(currentTheme)}` : 
+          getBackgroundPattern(currentTheme),
+        backgroundSize: theme.backgroundImage ? 
+          'cover, 20px 20px' : 
+          (currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px'),
+        backgroundPosition: theme.backgroundImage ? 'center, 0 0' : '0 0',
+        backgroundBlendMode: theme.backgroundImage ? 'overlay' : 'normal',
         color: theme.text,
         fontFamily: theme.textFont || 'serif'
       }}
     >
+      {/* Background image overlay */}
+      {theme.backgroundImage && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `url(${theme.backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: theme.backgroundImageOpacity || 0.1
+          }}
+        />
+      )}
       {/* Theme-specific decorations */}
       {currentTheme === 'bulletJournal' && <BulletDecorations theme={theme} />}
       {currentTheme === 'livreVintage' && <VintageDecorations theme={theme} />}
@@ -1127,6 +1286,24 @@ function App() {
                   <div className="border-t border-gray-200 my-1"></div>
                   
                   <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Export Images (par onglet)
+                  </div>
+                  <button
+                    onClick={exportToJPG}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🖼️ Exporter en JPG
+                  </button>
+                  <button
+                    onClick={exportToPNG}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🖼️ Exporter en PNG
+                  </button>
+                  
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Export Templates Python
                   </div>
                   <button
@@ -1185,769 +1362,21 @@ function App() {
             </button>
           </div>
 
-          {/* Section 1: Résumé & Architecture */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              📘 Résumé & Architecture
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Titre de l'œuvre
-                  </label>
-                  <input
-                    type="text"
-                    value={sheet.titre}
-                    onChange={(e) => updateField('titre', e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Titre de l'œuvre"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Auteur·ice / Édition utilisée
-                  </label>
-                  <input
-                    type="text"
-                    value={sheet.auteur}
-                    onChange={(e) => updateField('auteur', e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Auteur et édition"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Image de couverture ou portrait d'auteur
-                </label>
-                <ImageUploadZone label="une image de couverture" />
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Résumé détaillé
-                </label>
-                <textarea
-                  value={sheet.resume}
-                  onChange={(e) => updateField('resume', e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Résumé détaillé de l'œuvre..."
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Plan narratif / Architecture
-                  </label>
-                  <textarea
-                    value={sheet.plan}
-                    onChange={(e) => updateField('plan', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Structure de l'œuvre..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Temporalités (ordre, vitesse, ellipses)
-                  </label>
-                  <textarea
-                    value={sheet.temporalites}
-                    onChange={(e) => updateField('temporalites', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Analyse temporelle..."
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Points de vue / focalisation
-                  </label>
-                  <textarea
-                    value={sheet.pointsVue}
-                    onChange={(e) => updateField('pointsVue', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Narrateur, focalisation..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Système des personnages
-                  </label>
-                  <textarea
-                    value={sheet.personnages}
-                    onChange={(e) => updateField('personnages', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Personnages principaux..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Registres, tonalités, leitmotive
-                  </label>
-                  <textarea
-                    value={sheet.registres}
-                    onChange={(e) => updateField('registres', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Registres dominants..."
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Rythme narratif
-                </label>
-                <textarea
-                  value={sheet.rythme}
-                  onChange={(e) => updateField('rythme', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Analyse du rythme..."
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Analyse stylistique */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              🖋️ Analyse stylistique / de détail
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Figures de style marquantes
-                  </label>
-                  <textarea
-                    value={sheet.figures}
-                    onChange={(e) => updateField('figures', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Métaphores, comparaisons, etc."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Procédés récurrents
-                  </label>
-                  <textarea
-                    value={sheet.procedes}
-                    onChange={(e) => updateField('procedes', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Procédés stylistiques..."
-                  />
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Lexique spécifique / glossaire
-                </label>
-                <textarea
-                  value={sheet.lexique}
-                  onChange={(e) => updateField('lexique', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Vocabulaire particulier, termes techniques..."
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-bold" style={{ color: theme.textLight }}>
-                    Citations clés
-                  </label>
-                  <button
-                    onClick={addCitation}
-                    className="flex items-center gap-2 px-3 py-1 rounded-full text-white transition-all duration-200 hover:opacity-80"
-                    style={{ backgroundColor: theme.accent }}
-                  >
-                    <Plus size={16} />
-                    Ajouter
-                  </button>
-                </div>
-                <div 
-                  className="border-2 border-dashed p-5 rounded-lg"
-                  style={{ borderColor: theme.border, backgroundColor: 'white' }}
-                >
-                  {sheet.citations.map((citation, index) => (
-                    <div key={index} className="flex gap-3 items-start mb-4 last:mb-0">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={citation.text}
-                          onChange={(e) => updateCitation(index, 'text', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
-                          style={{
-                            backgroundColor: theme.background,
-                            borderColor: theme.border,
-                            color: theme.text
-                          }}
-                          placeholder="« Citation importante... »"
-                        />
-                      </div>
-                      <div className="w-20">
-                        <input
-                          type="text"
-                          value={citation.page}
-                          onChange={(e) => updateCitation(index, 'page', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
-                          style={{
-                            backgroundColor: theme.background,
-                            borderColor: theme.border,
-                            color: theme.text
-                          }}
-                          placeholder="p. 000"
-                        />
-                      </div>
-                      {sheet.citations.length > 1 && (
-                        <button
-                          onClick={() => removeCitation(index)}
-                          className="p-2 rounded-lg transition-all duration-200 hover:bg-red-100 text-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Problématiques & Enjeux */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              🧠 Problématiques & Enjeux
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Axes critiques principaux
-                  </label>
-                  <textarea
-                    value={sheet.axes}
-                    onChange={(e) => updateField('axes', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Principales orientations critiques..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Tensions internes à l'œuvre
-                  </label>
-                  <textarea
-                    value={sheet.tensions}
-                    onChange={(e) => updateField('tensions', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Contradictions, ambiguïtés..."
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Lectures possibles / débats critiques
-                  </label>
-                  <textarea
-                    value={sheet.lectures}
-                    onChange={(e) => updateField('lectures', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Différentes interprétations..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Intuitions personnelles de lecture
-                  </label>
-                  <textarea
-                    value={sheet.intuitions}
-                    onChange={(e) => updateField('intuitions', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Vos réflexions personnelles..."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Images dans l'œuvre */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              🖼️ Images dans l'œuvre
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Illustrations ou références visuelles
-                </label>
-                <ImageUploadZone label="des images illustrant l'œuvre" />
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Origine / rôle des images
-                  </label>
-                  <textarea
-                    value={sheet.images}
-                    onChange={(e) => updateField('images', e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="D'où viennent les images..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Fonction narrative ou symbolique
-                  </label>
-                  <textarea
-                    value={sheet.fonction}
-                    onChange={(e) => updateField('fonction', e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Rôle dans le récit..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Références culturelles associées
-                  </label>
-                  <textarea
-                    value={sheet.references}
-                    onChange={(e) => updateField('references', e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Références artistiques..."
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-bold mb-2" style={{ color: theme.textLight }}>
-                    Liens utiles
-                  </h4>
-                  <LinkManager sectionKey="images-links" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 5: Contexte & Perspectives */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              🔍 Contexte & Perspectives
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Documents historiques ou contextuels
-                </label>
-                <ImageUploadZone label="des documents d'époque, cartes, etc." />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Biographie de l'auteur·ice
-                  </label>
-                  <textarea
-                    value={sheet.biographie}
-                    onChange={(e) => updateField('biographie', e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Éléments biographiques pertinents..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Place de l'œuvre dans son parcours
-                  </label>
-                  <textarea
-                    value={sheet.place}
-                    onChange={(e) => updateField('place', e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Contexte de création..."
-                  />
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Courants littéraires / artistiques associés
-                </label>
-                <textarea
-                  value={sheet.courants}
-                  onChange={(e) => updateField('courants', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Mouvements, écoles, influences..."
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Références historiques, philosophiques, critiques
-                  </label>
-                  <textarea
-                    value={sheet.contexte}
-                    onChange={(e) => updateField('contexte', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Contexte intellectuel..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Réception critique
-                  </label>
-                  <textarea
-                    value={sheet.reception}
-                    onChange={(e) => updateField('reception', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Accueil de l'œuvre..."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 6: Comparatisme */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              🔄 Comparatisme
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Œuvres en regard dans le programme
-                </label>
-                <textarea
-                  value={sheet.oeuvres}
-                  onChange={(e) => updateField('oeuvres', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Autres œuvres du programme..."
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Thématiques ou procédés communs
-                  </label>
-                  <textarea
-                    value={sheet.thematiques}
-                    onChange={(e) => updateField('thematiques', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Points de convergence..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                    Éléments de convergence ou divergence
-                  </label>
-                  <textarea
-                    value={sheet.convergence}
-                    onChange={(e) => updateField('convergence', e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }}
-                    placeholder="Similitudes et différences..."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 7: Annexes */}
-          <div 
-            className="mb-8 border-l-4 pl-5 transition-all duration-300 hover:translate-x-1"
-            style={{ borderColor: theme.primary }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3" style={{ color: theme.primary, fontFamily: theme.titleFont || 'serif' }}>
-              📂 Annexes
-            </h2>
-            <div 
-              className="p-6 rounded-xl border"
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 5px, transparent 0)`,
-                backgroundSize: '20px 20px'
-              }}
-            >
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Schémas, tableaux ou cartes mentales
-                </label>
-                <ImageUploadZone label="vos schémas et tableaux" />
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Glossaire personnel
-                </label>
-                <textarea
-                  value={sheet.glossaire}
-                  onChange={(e) => updateField('glossaire', e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Définitions, termes techniques..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-                  Notes ou remarques libres
-                </label>
-                <textarea
-                  value={sheet.notes}
-                  onChange={(e) => updateField('notes', e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-                  style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    color: theme.text
-                  }}
-                  placeholder="Réflexions supplémentaires, idées..."
-                />
-              </div>
-            </div>
-          </div>
+          {/* Tab Manager */}
+          <TabManager
+            sheet={sheet}
+            updateField={updateField}
+            updateCitation={updateCitation}
+            addCitation={addCitation}
+            removeCitation={removeCitation}
+            theme={theme}
+            onTabsChange={(newTabs) => {
+              // Handle tab changes if needed
+            }}
+          />
 
           {/* Footer */}
-          <div className="text-center py-8" style={{ color: theme.textLight }}>
+          <div className="text-center py-8 mt-8" style={{ color: theme.textLight }}>
             <p className="text-sm">
               Fiche de lecture sauvegardée automatiquement • 
               Utilisez les boutons Sauvegarder/Charger pour partager vos fiches

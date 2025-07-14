@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { Plus, Edit2, Trash2, Download, Upload, Check, X, Palette, Type } from 'lucide-react';
+import { Plus, Edit2, Trash2, Download, Upload, Check, X, Palette, Type, Image as ImageIcon } from 'lucide-react';
 import ColorPicker from './ColorPicker';
 import FontSelector from './FontSelector';
+import BackgroundImageUpload from './BackgroundImageUpload';
 import { generatePalette, isValidHex } from '../utils/colorUtils';
 import { useCustomThemes, CustomTheme } from '../hooks/useCustomThemes';
 
@@ -33,7 +34,7 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
   const [editingName, setEditingName] = useState('');
   const [hexInput, setHexInput] = useState('#667eea');
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [activeTab, setActiveTab] = useState<'colors' | 'fonts'>('colors');
+  const [activeTab, setActiveTab] = useState<'colors' | 'fonts' | 'background'>('colors');
   const [advancedMode, setAdvancedMode] = useState(false);
   
   // Individual color states - initialize from current theme
@@ -51,6 +52,14 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
     titleFont: currentTheme.titleFont || '',
     textFont: currentTheme.textFont || ''
   });
+
+  // Background image states
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(
+    currentTheme.backgroundImage || null
+  );
+  const [backgroundOpacity, setBackgroundOpacity] = useState(
+    currentTheme.backgroundImageOpacity || 0.1
+  );
 
   const handleColorChange = useCallback((color: string) => {
     try {
@@ -125,7 +134,9 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
       card: '#ffffff',
       gradient: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
       titleFont: customFonts.titleFont || previewTheme.titleFont,
-      textFont: customFonts.textFont || previewTheme.textFont
+      textFont: customFonts.textFont || previewTheme.textFont,
+      backgroundImage: backgroundImage,
+      backgroundImageOpacity: backgroundOpacity
     };
     setPreviewTheme(newTheme);
   };
@@ -141,6 +152,23 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
       ...prev,
       titleFont: newFonts.titleFont || prev.titleFont,
       textFont: newFonts.textFont || prev.textFont
+    }));
+  };
+
+  const handleBackgroundImageChange = (imageData: string | null) => {
+    setBackgroundImage(imageData);
+    setPreviewTheme(prev => ({
+      ...prev,
+      backgroundImage: imageData,
+      backgroundImageOpacity: backgroundOpacity
+    }));
+  };
+
+  const handleBackgroundOpacityChange = (opacity: number) => {
+    setBackgroundOpacity(opacity);
+    setPreviewTheme(prev => ({
+      ...prev,
+      backgroundImageOpacity: opacity
     }));
   };
 
@@ -194,7 +222,9 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
       ...previewTheme,
       name: themeName.trim(),
       titleFont: customFonts.titleFont || previewTheme.titleFont,
-      textFont: customFonts.textFont || previewTheme.textFont
+      textFont: customFonts.textFont || previewTheme.textFont,
+      backgroundImage: backgroundImage,
+      backgroundImageOpacity: backgroundOpacity
     };
 
     // Create theme using the preview theme data
@@ -351,6 +381,17 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
               <Type size={16} />
               Polices
             </button>
+            <button
+              onClick={() => setActiveTab('background')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'background' 
+                  ? 'bg-white shadow-sm text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <ImageIcon size={16} />
+              Arrière-plan
+            </button>
           </div>
 
           {/* Color Tab */}
@@ -483,6 +524,18 @@ const CustomThemeCreator: React.FC<CustomThemeCreatorProps> = ({
                 textFont={customFonts.textFont}
                 onFontChange={handleFontChange}
                 theme={previewTheme}
+              />
+            </div>
+          )}
+
+          {/* Background Tab */}
+          {activeTab === 'background' && (
+            <div className="space-y-4">
+              <BackgroundImageUpload
+                currentImage={backgroundImage}
+                onImageChange={handleBackgroundImageChange}
+                opacity={backgroundOpacity}
+                onOpacityChange={handleBackgroundOpacityChange}
               />
             </div>
           )}
