@@ -386,7 +386,8 @@ function App() {
         { id: 'images-oeuvre', title: 'Images dans l\'œuvre', icon: '🖼️' },
         { id: 'contexte-perspectives', title: 'Contexte & Perspectives', icon: '🔍' },
         { id: 'comparatisme', title: 'Comparatisme', icon: '🔄' },
-        { id: 'annexes', title: 'Annexes', icon: '📂' }
+        { id: 'annexes', title: 'Annexes', icon: '📂' },
+        { id: 'custom-zones-main', title: 'Zones personnalisées', icon: '🎨' }
       ];
 
       // Create PDF document
@@ -1339,6 +1340,92 @@ function App() {
         contentDiv.appendChild(createPDFSection('Notes personnelles', sheet.notes || 'Non renseigné'));
         contentDiv.appendChild(createPDFSection('Schémas et cartes', sheet.schemas || 'Non renseigné'));
         contentDiv.appendChild(createPDFSection('Références', sheet.references || 'Non renseigné'));
+        break;
+      case 'custom-zones-main':
+        // Add custom zones content for PDF export
+        const customZonesData = localStorage.getItem('customZones');
+        if (customZonesData) {
+          try {
+            const customZones = JSON.parse(customZonesData);
+            const visibleZones = customZones.filter((zone: any) => zone.isVisible && !zone.isDeleted);
+            
+            if (visibleZones.length > 0) {
+              const zonesByType = {
+                text: visibleZones.filter((z: any) => z.type === 'text'),
+                citation: visibleZones.filter((z: any) => z.type === 'citation'),
+                notes: visibleZones.filter((z: any) => z.type === 'notes'),
+                import: visibleZones.filter((z: any) => z.type === 'import'),
+                custom: visibleZones.filter((z: any) => z.type === 'custom')
+              };
+              
+              // Add each zone type as a section
+              Object.entries(zonesByType).forEach(([type, zones]) => {
+                if (zones.length > 0) {
+                  const typeConfig = {
+                    text: { title: 'Zones de texte', icon: '📝' },
+                    citation: { title: 'Zones de citation', icon: '💬' },
+                    notes: { title: 'Zones de notes', icon: '📌' },
+                    import: { title: 'Zones d\'importation', icon: '📁' },
+                    custom: { title: 'Zones personnalisées', icon: '🎨' }
+                  };
+                  
+                  const typeSection = document.createElement('div');
+                  typeSection.style.marginBottom = '30px';
+                  typeSection.style.padding = '20px';
+                  typeSection.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                  typeSection.style.borderRadius = '8px';
+                  typeSection.style.border = '1px solid #e0e0e0';
+                  
+                  const typeTitle = document.createElement('h4');
+                  typeTitle.style.color = theme.primary || '#667eea';
+                  typeTitle.style.fontSize = '16px';
+                  typeTitle.style.fontWeight = 'bold';
+                  typeTitle.style.marginBottom = '15px';
+                  typeTitle.style.borderBottom = `2px solid ${theme.primary || '#667eea'}`;
+                  typeTitle.style.paddingBottom = '5px';
+                  typeTitle.textContent = `${typeConfig[type as keyof typeof typeConfig].icon} ${typeConfig[type as keyof typeof typeConfig].title}`;
+                  typeSection.appendChild(typeTitle);
+                  
+                  zones.forEach((zone: any) => {
+                    const zoneDiv = document.createElement('div');
+                    zoneDiv.style.marginBottom = '15px';
+                    zoneDiv.style.padding = '15px';
+                    zoneDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+                    zoneDiv.style.borderRadius = '6px';
+                    zoneDiv.style.borderLeft = '3px solid #ccc';
+                    
+                    const zoneTitle = document.createElement('h5');
+                    zoneTitle.style.fontSize = '14px';
+                    zoneTitle.style.fontWeight = 'bold';
+                    zoneTitle.style.marginBottom = '8px';
+                    zoneTitle.style.color = theme.text || '#000000';
+                    zoneTitle.textContent = zone.title;
+                    zoneDiv.appendChild(zoneTitle);
+                    
+                    const zoneContent = document.createElement('div');
+                    zoneContent.style.fontSize = '13px';
+                    zoneContent.style.lineHeight = '1.5';
+                    zoneContent.style.color = theme.text || '#000000';
+                    zoneContent.style.whiteSpace = 'pre-wrap';
+                    zoneContent.textContent = zone.content || 'Contenu non renseigné';
+                    zoneDiv.appendChild(zoneContent);
+                    
+                    typeSection.appendChild(zoneDiv);
+                  });
+                  
+                  contentDiv.appendChild(typeSection);
+                }
+              });
+            } else {
+              contentDiv.appendChild(createPDFSection('Zones personnalisées', 'Aucune zone personnalisée créée', true));
+            }
+          } catch (error) {
+            console.error('Error loading custom zones for PDF:', error);
+            contentDiv.appendChild(createPDFSection('Zones personnalisées', 'Erreur lors du chargement des zones', true));
+          }
+        } else {
+          contentDiv.appendChild(createPDFSection('Zones personnalisées', 'Aucune zone personnalisée créée', true));
+        }
         break;
       default:
         contentDiv.appendChild(createPDFSection('Contenu personnalisé', 'Contenu de l\'onglet personnalisé', true));

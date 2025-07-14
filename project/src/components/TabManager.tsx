@@ -30,6 +30,7 @@ import {
   ComparatismeSection,
   AnnexesSection
 } from './sections/SectionComponents';
+import CustomZoneCanvas from './CustomZoneCanvas';
 
 export interface Tab {
   id: string;
@@ -316,7 +317,24 @@ const TabManager: React.FC<TabManagerProps> = ({
         return <ComparatismeSection {...sectionProps} />;
       case 'annexes':
         return <AnnexesSection {...sectionProps} />;
+      case 'custom-zones-main':
+        return (
+          <CustomZoneCanvas
+            theme={theme}
+            className="p-4"
+          />
+        );
       default:
+        // Check if this is a custom zone tab
+        if (tabId.startsWith('custom-zones-')) {
+          return (
+            <CustomZoneCanvas
+              theme={theme}
+              className="p-4"
+            />
+          );
+        }
+        
         return (
           <div className="p-8 text-center">
             <h3 className="text-lg font-semibold mb-4">Contenu personnalisé</h3>

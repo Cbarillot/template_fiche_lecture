@@ -58,6 +58,13 @@ const DEFAULT_TABS: TabData[] = [
     icon: '📂',
     isDefault: true,
     order: 7
+  },
+  {
+    id: 'custom-zones-main',
+    title: 'Zones personnalisées',
+    icon: '🎨',
+    isDefault: true,
+    order: 8
   }
 ];
 
