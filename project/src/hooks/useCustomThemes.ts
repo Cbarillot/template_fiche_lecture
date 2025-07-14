@@ -13,6 +13,8 @@ export interface CustomTheme {
   textLight: string;
   border: string;
   gradient: string;
+  titleFont?: string;
+  textFont?: string;
   createdAt: Date;
 }
 
