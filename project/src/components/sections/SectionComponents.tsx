@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Trash2, Camera } from 'lucide-react';
+import RichTextEditor from '../RichTextEditor';
 
 export interface ReadingSheet {
   titre: string;
@@ -137,7 +138,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
           onChange={(e) => updateField('titre', e.target.value)}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -154,7 +155,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
           onChange={(e) => updateField('auteur', e.target.value)}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -170,40 +171,30 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
       <ImageUploadZone label="une image de couverture" />
     </div>
 
-    <div className="mb-6">
-      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
-        Résumé détaillé
-      </label>
-      <textarea
-        value={sheet.resume}
-        onChange={(e) => updateField('resume', e.target.value)}
-        rows={6}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: theme.background,
-          borderColor: theme.border,
-          color: theme.text
-        }}
-        placeholder="Résumé détaillé de l'œuvre..."
-      />
-    </div>
+      <div className="mb-6">
+        <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
+          Résumé détaillé
+        </label>
+        <RichTextEditor
+          value={sheet.resume}
+          onChange={(value) => updateField('resume', value)}
+          placeholder="Résumé détaillé de l'œuvre..."
+          theme={theme}
+          rows={6}
+        />
+      </div>
 
     <div className="grid md:grid-cols-2 gap-6 mb-6">
       <div>
         <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
           Plan narratif / Architecture
         </label>
-        <textarea
+        <RichTextEditor
           value={sheet.plan}
-          onChange={(e) => updateField('plan', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: theme.background,
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('plan', value)}
           placeholder="Structure de l'œuvre..."
+          theme={theme}
+          rows={4}
         />
       </div>
       <div>
@@ -216,7 +207,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -236,7 +227,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -253,7 +244,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -270,7 +261,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -289,7 +280,7 @@ export const ResumeArchitectureSection: React.FC<SectionProps> = ({ sheet, updat
         rows={3}
         className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
         style={{
-          backgroundColor: theme.background,
+          backgroundColor: '#ffffff',
           borderColor: theme.border,
           color: theme.text
         }}
@@ -320,7 +311,7 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -337,7 +328,7 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -356,7 +347,7 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
         rows={3}
         className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
         style={{
-          backgroundColor: theme.background,
+          backgroundColor: '#ffffff',
           borderColor: theme.border,
           color: theme.text
         }}
@@ -391,7 +382,7 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
                 onChange={(e) => updateCitation(index, 'text', e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
                 style={{
-                  backgroundColor: theme.background,
+                  backgroundColor: '#ffffff',
                   borderColor: theme.border,
                   color: theme.text
                 }}
@@ -405,7 +396,7 @@ export const AnalyseStylistiqueSection: React.FC<SectionProps> = ({
                 onChange={(e) => updateCitation(index, 'page', e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
                 style={{
-                  backgroundColor: theme.background,
+                  backgroundColor: '#ffffff',
                   borderColor: theme.border,
                   color: theme.text
                 }}
@@ -435,17 +426,12 @@ export const ProblematiquesEnjeuxSection: React.FC<SectionProps> = ({ sheet, upd
         <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
           Axes critiques principaux
         </label>
-        <textarea
+        <RichTextEditor
           value={sheet.axes}
-          onChange={(e) => updateField('axes', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-          style={{
-            backgroundColor: theme.background,
-            borderColor: theme.border,
-            color: theme.text
-          }}
+          onChange={(value) => updateField('axes', value)}
           placeholder="Principales orientations critiques..."
+          theme={theme}
+          rows={4}
         />
       </div>
       <div>
@@ -458,7 +444,7 @@ export const ProblematiquesEnjeuxSection: React.FC<SectionProps> = ({ sheet, upd
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -478,7 +464,7 @@ export const ProblematiquesEnjeuxSection: React.FC<SectionProps> = ({ sheet, upd
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -495,7 +481,7 @@ export const ProblematiquesEnjeuxSection: React.FC<SectionProps> = ({ sheet, upd
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -527,7 +513,7 @@ export const ImagesOeuvreSection: React.FC<SectionProps> = ({ sheet, updateField
           rows={3}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -544,7 +530,7 @@ export const ImagesOeuvreSection: React.FC<SectionProps> = ({ sheet, updateField
           rows={3}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -561,7 +547,7 @@ export const ImagesOeuvreSection: React.FC<SectionProps> = ({ sheet, updateField
           rows={3}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -593,7 +579,7 @@ export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, upd
           rows={3}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -610,7 +596,7 @@ export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, upd
           rows={3}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -629,7 +615,7 @@ export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, upd
         rows={3}
         className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
         style={{
-          backgroundColor: theme.background,
+          backgroundColor: '#ffffff',
           borderColor: theme.border,
           color: theme.text
         }}
@@ -648,7 +634,7 @@ export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, upd
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -665,7 +651,7 @@ export const ContextePerspectivesSection: React.FC<SectionProps> = ({ sheet, upd
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -689,7 +675,7 @@ export const ComparatismeSection: React.FC<SectionProps> = ({ sheet, updateField
         rows={3}
         className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
         style={{
-          backgroundColor: theme.background,
+          backgroundColor: '#ffffff',
           borderColor: theme.border,
           color: theme.text
         }}
@@ -708,7 +694,7 @@ export const ComparatismeSection: React.FC<SectionProps> = ({ sheet, updateField
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -725,7 +711,7 @@ export const ComparatismeSection: React.FC<SectionProps> = ({ sheet, updateField
           rows={4}
           className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
           style={{
-            backgroundColor: theme.background,
+            backgroundColor: '#ffffff',
             borderColor: theme.border,
             color: theme.text
           }}
@@ -756,7 +742,7 @@ export const AnnexesSection: React.FC<SectionProps> = ({ sheet, updateField, the
         rows={4}
         className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
         style={{
-          backgroundColor: theme.background,
+          backgroundColor: '#ffffff',
           borderColor: theme.border,
           color: theme.text
         }}
@@ -768,17 +754,12 @@ export const AnnexesSection: React.FC<SectionProps> = ({ sheet, updateField, the
       <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
         Notes ou remarques libres
       </label>
-      <textarea
+      <RichTextEditor
         value={sheet.notes}
-        onChange={(e) => updateField('notes', e.target.value)}
-        rows={6}
-        className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 resize-vertical"
-        style={{
-          backgroundColor: theme.background,
-          borderColor: theme.border,
-          color: theme.text
-        }}
+        onChange={(value) => updateField('notes', value)}
         placeholder="Réflexions supplémentaires, idées..."
+        theme={theme}
+        rows={6}
       />
     </div>
   </div>
