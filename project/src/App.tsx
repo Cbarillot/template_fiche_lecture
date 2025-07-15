@@ -1017,28 +1017,6 @@ function App() {
     }
   }, [currentTheme, customThemeData]);
 
-  // Test the zone creation functionality
-  const testZoneCreation = () => {
-    // Add some test history actions
-    addToHistory({
-      type: 'content',
-      description: 'Test action 1',
-      target: { type: 'sheet', id: 'titre' },
-      before: { value: '' },
-      after: { value: 'Test' }
-    });
-    
-    addToHistory({
-      type: 'content',
-      description: 'Test action 2',
-      target: { type: 'sheet', id: 'auteur' },
-      before: { value: '' },
-      after: { value: 'Test Author' }
-    });
-    
-    console.log('Test actions added to history:', getHistorySummary());
-  };
-
   // Helper function to adjust color brightness
   const adjustColorBrightness = (color: string, percent: number) => {
     const num = parseInt(color.replace('#', ''), 16);
@@ -2094,16 +2072,6 @@ function App() {
           canRedo={getHistorySummary().canRedo}
           theme={theme}
         />
-
-        {/* Test Button for History */}
-        <div className="text-center py-4">
-          <button
-            onClick={testZoneCreation}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-          >
-            Test History (Debug)
-          </button>
-        </div>
 
         {/* Content */}
         <div className="p-10">
