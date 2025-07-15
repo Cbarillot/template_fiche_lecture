@@ -11,10 +11,8 @@ import {
   Quote,
   Strikethrough,
   Type,
-  Palette,
   ChevronDown,
-  ChevronUp,
-  MoreHorizontal
+  ChevronUp
 } from 'lucide-react';
 
 interface CompactRichTextEditorProps {
@@ -48,16 +46,106 @@ const CompactRichTextEditor: React.FC<CompactRichTextEditorProps> = ({
     '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#F97316'
   ];
 
+  const getTextNodesIn = (node: Node): Text[] => {
+    const textNodes: Text[] = [];
+    if (node.nodeType === Node.TEXT_NODE) {
+      textNodes.push(node as Text);
+    } else {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        textNodes.push(...getTextNodesIn(node.childNodes[i]));
+      }
+    }
+    return textNodes;
+  };
+
   useEffect(() => {
-    if (editorRef.current) {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      // Save cursor position
+      const selection = window.getSelection();
+      let cursorPosition = 0;
+      
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const preSelectionRange = range.cloneRange();
+        preSelectionRange.selectNodeContents(editorRef.current);
+        preSelectionRange.setEnd(range.startContainer, range.startOffset);
+        cursorPosition = preSelectionRange.toString().length;
+      }
+      
+      // Update content
       editorRef.current.innerHTML = value;
+      
+      // Restore cursor position
+      if (cursorPosition > 0) {
+        const textNodes = getTextNodesIn(editorRef.current);
+        let charCount = 0;
+        let targetNode = null;
+        let targetOffset = 0;
+        
+        for (let i = 0; i < textNodes.length; i++) {
+          const node = textNodes[i];
+          const nodeLength = node.textContent?.length || 0;
+          
+          if (charCount + nodeLength >= cursorPosition) {
+            targetNode = node;
+            targetOffset = cursorPosition - charCount;
+            break;
+          }
+          charCount += nodeLength;
+        }
+        
+        if (targetNode && selection) {
+          try {
+            const range = document.createRange();
+            range.setStart(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0));
+            range.setEnd(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0));
+            selection.removeAllRanges();
+            selection.addRange(range);
+          } catch (e) {
+            // Fallback: place cursor at the end
+            const range = document.createRange();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }
     }
   }, [value]);
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      // Use the current content instead of innerHTML to preserve cursor
+      const newValue = editorRef.current.innerHTML;
+      onChange(newValue);
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle keyboard shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 'b':
+          e.preventDefault();
+          executeCommand('bold');
+          break;
+        case 'i':
+          e.preventDefault();
+          executeCommand('italic');
+          break;
+        case 'u':
+          e.preventDefault();
+          executeCommand('underline');
+          break;
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   const executeCommand = (command: string, value?: string) => {
@@ -211,6 +299,8 @@ const CompactRichTextEditor: React.FC<CompactRichTextEditorProps> = ({
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={`

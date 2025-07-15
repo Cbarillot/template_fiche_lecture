@@ -55,9 +55,72 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     '#ff9800', // Orange
   ];
 
+  // Helper function to get all text nodes
+  const getTextNodesIn = (node: Node): Text[] => {
+    const textNodes: Text[] = [];
+    if (node.nodeType === Node.TEXT_NODE) {
+      textNodes.push(node as Text);
+    } else {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        textNodes.push(...getTextNodesIn(node.childNodes[i]));
+      }
+    }
+    return textNodes;
+  };
+
   useEffect(() => {
-    if (editorRef.current) {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      // Save cursor position
+      const selection = window.getSelection();
+      let cursorPosition = 0;
+      
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const preSelectionRange = range.cloneRange();
+        preSelectionRange.selectNodeContents(editorRef.current);
+        preSelectionRange.setEnd(range.startContainer, range.startOffset);
+        cursorPosition = preSelectionRange.toString().length;
+      }
+      
+      // Update content
       editorRef.current.innerHTML = value;
+      
+      // Restore cursor position
+      if (cursorPosition > 0) {
+        const textNodes = getTextNodesIn(editorRef.current);
+        let charCount = 0;
+        let targetNode = null;
+        let targetOffset = 0;
+        
+        for (let i = 0; i < textNodes.length; i++) {
+          const node = textNodes[i];
+          const nodeLength = node.textContent?.length || 0;
+          
+          if (charCount + nodeLength >= cursorPosition) {
+            targetNode = node;
+            targetOffset = cursorPosition - charCount;
+            break;
+          }
+          charCount += nodeLength;
+        }
+        
+        if (targetNode && selection) {
+          try {
+            const range = document.createRange();
+            range.setStart(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0));
+            range.setEnd(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0));
+            selection.removeAllRanges();
+            selection.addRange(range);
+          } catch (e) {
+            // Fallback: place cursor at the end
+            const range = document.createRange();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }
     }
   }, [value]);
 
@@ -82,7 +145,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      // Use the current content instead of innerHTML to preserve cursor
+      const newValue = editorRef.current.innerHTML;
+      onChange(newValue);
     }
   };
 
@@ -104,6 +169,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           break;
       }
     }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   const applyHighlight = (color: string) => {
@@ -275,6 +346,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         contentEditable
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         className="w-full px-4 py-3 border rounded-b-lg transition-all duration-200 focus:ring-2 focus:ring-opacity-50 focus:outline-none resize-none"
         style={{
           backgroundColor: style.backgroundColor || '#ffffff',
