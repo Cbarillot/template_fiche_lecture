@@ -108,6 +108,7 @@ const SortableTab: React.FC<SortableTabProps> = ({
         ${isCollapsed ? 'justify-center' : ''}
       `}
       title={isCollapsed ? tab.title : ''}
+      data-tab-id={tab.id}
     >
       {/* Drag Handle */}
       {!isCollapsed && (
@@ -451,6 +452,7 @@ const TabManager: React.FC<TabManagerProps> = ({
                   onClick={() => setShowAddForm(!showAddForm)}
                   className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Ajouter un onglet"
+                  data-testid="add-tab-button"
                 >
                   <Plus size={18} />
                 </button>

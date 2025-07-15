@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Save, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -7,7 +7,9 @@ import { exportSimple, exportModern, exportWebStyle, exportSimpleWeb, ExportOpti
 import { downloadFile, openFileInNewTab } from './exports/utils';
 import CustomThemeCreator from './components/CustomThemeCreator';
 import TabManager from './components/TabManager';
+import MainToolbar from './components/MainToolbar';
 import { useCustomThemes } from './hooks/useCustomThemes';
+import { useHistoryManager } from './hooks/useHistoryManager';
 import { ReadingSheet } from './components/sections/SectionComponents';
 
 // Link Manager Component
@@ -277,6 +279,7 @@ function App() {
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   const { customThemes } = useCustomThemes();
+  const { undo, redo, getHistorySummary } = useHistoryManager();
   
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
@@ -846,6 +849,160 @@ function App() {
     setCurrentTheme('custom');
     setCustomThemeData(newTheme);
   };
+
+  // Main toolbar handlers
+  const handleUndo = useCallback(() => {
+    undo();
+  }, [undo]);
+
+  const handleRedo = useCallback(() => {
+    redo();
+  }, [redo]);
+
+  const handleAddTextZone = useCallback(() => {
+    // Navigate to custom zones tab and trigger text zone creation
+    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
+    if (customZonesTab) {
+      // Find and click the custom zones tab
+      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
+      const customZonesLink = Array.from(tabElements).find(el => 
+        el.getAttribute('data-tab-id') === 'custom-zones-main'
+      );
+      if (customZonesLink) {
+        (customZonesLink as HTMLElement).click();
+        // Trigger zone creation after a short delay
+        setTimeout(() => {
+          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
+          if (addZoneButton) {
+            (addZoneButton as HTMLElement).click();
+            // Select text zone after a short delay
+            setTimeout(() => {
+              const textZoneButton = document.querySelector('[data-zone-type="text"]');
+              if (textZoneButton) {
+                (textZoneButton as HTMLElement).click();
+              }
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+  }, []);
+
+  const handleAddImportZone = useCallback(() => {
+    // Navigate to custom zones tab and trigger import zone creation
+    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
+    if (customZonesTab) {
+      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
+      const customZonesLink = Array.from(tabElements).find(el => 
+        el.getAttribute('data-tab-id') === 'custom-zones-main'
+      );
+      if (customZonesLink) {
+        (customZonesLink as HTMLElement).click();
+        setTimeout(() => {
+          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
+          if (addZoneButton) {
+            (addZoneButton as HTMLElement).click();
+            setTimeout(() => {
+              const importZoneButton = document.querySelector('[data-zone-type="import"]');
+              if (importZoneButton) {
+                (importZoneButton as HTMLElement).click();
+              }
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+  }, []);
+
+  const handleAddCitationZone = useCallback(() => {
+    // Navigate to custom zones tab and trigger citation zone creation
+    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
+    if (customZonesTab) {
+      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
+      const customZonesLink = Array.from(tabElements).find(el => 
+        el.getAttribute('data-tab-id') === 'custom-zones-main'
+      );
+      if (customZonesLink) {
+        (customZonesLink as HTMLElement).click();
+        setTimeout(() => {
+          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
+          if (addZoneButton) {
+            (addZoneButton as HTMLElement).click();
+            setTimeout(() => {
+              const citationZoneButton = document.querySelector('[data-zone-type="citation"]');
+              if (citationZoneButton) {
+                (citationZoneButton as HTMLElement).click();
+              }
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+  }, []);
+
+  const handleAddNotesZone = useCallback(() => {
+    // Navigate to custom zones tab and trigger notes zone creation
+    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
+    if (customZonesTab) {
+      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
+      const customZonesLink = Array.from(tabElements).find(el => 
+        el.getAttribute('data-tab-id') === 'custom-zones-main'
+      );
+      if (customZonesLink) {
+        (customZonesLink as HTMLElement).click();
+        setTimeout(() => {
+          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
+          if (addZoneButton) {
+            (addZoneButton as HTMLElement).click();
+            setTimeout(() => {
+              const notesZoneButton = document.querySelector('[data-zone-type="notes"]');
+              if (notesZoneButton) {
+                (notesZoneButton as HTMLElement).click();
+              }
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+  }, []);
+
+  const handleAddTab = useCallback(() => {
+    // Find and click the add tab button
+    const addTabButton = document.querySelector('[data-testid="add-tab-button"]');
+    if (addTabButton) {
+      (addTabButton as HTMLElement).click();
+    }
+  }, []);
+
+  const handleOpenColorPicker = useCallback(() => {
+    setIsThemeSelectorOpen(true);
+  }, []);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'z':
+            if (e.shiftKey) {
+              e.preventDefault();
+              handleRedo();
+            } else {
+              e.preventDefault();
+              handleUndo();
+            }
+            break;
+          case 'y':
+            e.preventDefault();
+            handleRedo();
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   const exportToWord = async () => {
     try {
@@ -1829,6 +1986,21 @@ function App() {
                sheet.titre || 'Titre de l\'œuvre à saisir'}
             </h2>
         </div>
+
+        {/* Main Toolbar */}
+        <MainToolbar
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onAddTextZone={handleAddTextZone}
+          onAddImportZone={handleAddImportZone}
+          onAddCitationZone={handleAddCitationZone}
+          onAddNotesZone={handleAddNotesZone}
+          onAddTab={handleAddTab}
+          onOpenColorPicker={handleOpenColorPicker}
+          canUndo={getHistorySummary().canUndo}
+          canRedo={getHistorySummary().canRedo}
+          theme={theme}
+        />
 
         {/* Content */}
         <div className="p-10">
