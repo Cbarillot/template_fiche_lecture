@@ -289,6 +289,7 @@ const EnhancedColorPicker: React.FC<ColorPickerProps> = ({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     const pos = getMousePosition(e);
     const dx = pos.x - centerPoint.x;
     const dy = pos.y - centerPoint.y;
@@ -308,21 +309,29 @@ const EnhancedColorPicker: React.FC<ColorPickerProps> = ({
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !dragTarget) return;
 
-    const pos = getMousePosition(e);
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
     
     if (dragTarget === 'wheel') {
       updateHue(pos);
     } else if (dragTarget === 'saturation') {
       updateSaturationBrightness(pos);
     }
-  }, [isDragging, dragTarget]);
+  }, [isDragging, dragTarget, updateHue, updateSaturationBrightness]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setDragTarget(null);
   }, []);
 
-  const updateHue = (pos: Point) => {
+  const updateHue = useCallback((pos: Point) => {
     const dx = pos.x - centerPoint.x;
     const dy = pos.y - centerPoint.y;
     const angle = Math.atan2(dy, dx);
@@ -337,9 +346,9 @@ const EnhancedColorPicker: React.FC<ColorPickerProps> = ({
     setCurrentRGB(rgb);
     setCurrentHSL(rgbToHsl(rgb.r, rgb.g, rgb.b));
     onChange(hex);
-  };
+  }, [currentHSV, centerPoint, onChange]);
 
-  const updateSaturationBrightness = (pos: Point) => {
+  const updateSaturationBrightness = useCallback((pos: Point) => {
     const dx = pos.x - centerPoint.x;
     const dy = pos.y - centerPoint.y;
     
@@ -358,12 +367,15 @@ const EnhancedColorPicker: React.FC<ColorPickerProps> = ({
     setCurrentRGB(rgb);
     setCurrentHSL(rgbToHsl(rgb.r, rgb.g, rgb.b));
     onChange(hex);
-  };
+  }, [currentHSV, centerPoint, saturationSize, onChange]);
 
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     }
 
     return () => {
