@@ -107,6 +107,7 @@ export const useHistoryManager = () => {
     });
 
     console.log('Action added to history:', newAction);
+    console.log('New history state:', { historyLength: history.length + 1, currentIndex: currentIndex + 1 });
   };
 
   // Undo operation

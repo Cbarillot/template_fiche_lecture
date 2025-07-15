@@ -335,17 +335,19 @@ function App() {
   const updateField = (field: keyof ReadingSheet, value: string) => {
     const previousValue = sheet[field];
     
-    // Add to history before making the change
-    addToHistory({
-      type: 'content',
-      description: `Modification du champ "${field}"`,
-      target: {
-        type: 'sheet',
-        id: field
-      },
-      before: { value: previousValue },
-      after: { value }
-    });
+    // Only add to history if the value actually changed
+    if (previousValue !== value) {
+      addToHistory({
+        type: 'content',
+        description: `Modification du champ "${field}"`,
+        target: {
+          type: 'sheet',
+          id: field
+        },
+        before: { value: previousValue },
+        after: { value }
+      });
+    }
     
     setSheet(prev => ({ ...prev, [field]: value }));
   };
@@ -1015,6 +1017,28 @@ function App() {
     }
   }, [currentTheme, customThemeData]);
 
+  // Test the zone creation functionality
+  const testZoneCreation = () => {
+    // Add some test history actions
+    addToHistory({
+      type: 'content',
+      description: 'Test action 1',
+      target: { type: 'sheet', id: 'titre' },
+      before: { value: '' },
+      after: { value: 'Test' }
+    });
+    
+    addToHistory({
+      type: 'content',
+      description: 'Test action 2',
+      target: { type: 'sheet', id: 'auteur' },
+      before: { value: '' },
+      after: { value: 'Test Author' }
+    });
+    
+    console.log('Test actions added to history:', getHistorySummary());
+  };
+
   // Helper function to adjust color brightness
   const adjustColorBrightness = (color: string, percent: number) => {
     const num = parseInt(color.replace('#', ''), 16);
@@ -1030,19 +1054,30 @@ function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
+      // Only handle shortcuts if no input is focused
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' || 
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.getAttribute('contenteditable') === 'true'
+      );
+      
+      if (!isInputFocused && (e.ctrlKey || e.metaKey)) {
         switch (e.key.toLowerCase()) {
           case 'z':
             if (e.shiftKey) {
               e.preventDefault();
+              console.log('Redo shortcut triggered');
               handleRedo();
             } else {
               e.preventDefault();
+              console.log('Undo shortcut triggered');
               handleUndo();
             }
             break;
           case 'y':
             e.preventDefault();
+            console.log('Redo shortcut triggered');
             handleRedo();
             break;
         }
@@ -2059,6 +2094,16 @@ function App() {
           canRedo={getHistorySummary().canRedo}
           theme={theme}
         />
+
+        {/* Test Button for History */}
+        <div className="text-center py-4">
+          <button
+            onClick={testZoneCreation}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Test History (Debug)
+          </button>
+        </div>
 
         {/* Content */}
         <div className="p-10">
