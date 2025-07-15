@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useDynamicTabs } from '../hooks/useDynamicTabs';
 import { useZoneCustomizations } from '../hooks/useZoneCustomizations';
+import { useHistoryManager } from '../hooks/useHistoryManager';
 import {
   ReadingSheet,
   ResumeArchitectureSection,
@@ -30,6 +31,8 @@ import {
   ComparatismeSection,
   AnnexesSection
 } from './sections/SectionComponents';
+import CustomZoneCanvas from './CustomZoneCanvas';
+import HistoryPanel from './HistoryPanel';
 
 export interface Tab {
   id: string;
@@ -202,12 +205,15 @@ const TabManager: React.FC<TabManagerProps> = ({
     deleteZone, 
     restoreZone 
   } = useZoneCustomizations();
+  const { addToHistory, isUndoRedoOperation } = useHistoryManager();
+  
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTabTitle, setNewTabTitle] = useState('');
   const [newTabIcon, setNewTabIcon] = useState('📝');
   const [isTabSidebarCollapsed, setIsTabSidebarCollapsed] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
   // Available icons for new tabs
   const availableIcons = [
@@ -316,7 +322,24 @@ const TabManager: React.FC<TabManagerProps> = ({
         return <ComparatismeSection {...sectionProps} />;
       case 'annexes':
         return <AnnexesSection {...sectionProps} />;
+      case 'custom-zones-main':
+        return (
+          <CustomZoneCanvas
+            theme={theme}
+            className="p-4"
+          />
+        );
       default:
+        // Check if this is a custom zone tab
+        if (tabId.startsWith('custom-zones-')) {
+          return (
+            <CustomZoneCanvas
+              theme={theme}
+              className="p-4"
+            />
+          );
+        }
+        
         return (
           <div className="p-8 text-center">
             <h3 className="text-lg font-semibold mb-4">Contenu personnalisé</h3>
@@ -391,6 +414,13 @@ const TabManager: React.FC<TabManagerProps> = ({
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full" data-testid="tab-manager">
+      {/* History Panel */}
+      {showHistoryPanel && (
+        <div className="mb-4">
+          <HistoryPanel theme={theme} />
+        </div>
+      )}
+      
       {/* Tab Sidebar */}
       <div className={`flex-shrink-0 transition-all duration-300 ${
         isTabSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'

@@ -369,10 +369,12 @@ function App() {
 
   const exportToPDF = async () => {
     try {
-      // Get tab manager element to access tabs
-      const tabManagerElement = document.querySelector('[data-testid="tab-manager"]') as HTMLElement;
-      if (!tabManagerElement) {
-        alert('Impossible de trouver le gestionnaire d\'onglets');
+      console.log('Starting PDF export...');
+      console.log('Current sheet data:', sheet);
+      
+      // Validate sheet data
+      if (!sheet) {
+        alert('Erreur: Aucune donnée à exporter');
         return;
       }
 
@@ -384,7 +386,8 @@ function App() {
         { id: 'images-oeuvre', title: 'Images dans l\'œuvre', icon: '🖼️' },
         { id: 'contexte-perspectives', title: 'Contexte & Perspectives', icon: '🔍' },
         { id: 'comparatisme', title: 'Comparatisme', icon: '🔄' },
-        { id: 'annexes', title: 'Annexes', icon: '📂' }
+        { id: 'annexes', title: 'Annexes', icon: '📂' },
+        { id: 'custom-zones-main', title: 'Zones personnalisées', icon: '🎨' }
       ];
 
       // Create PDF document
@@ -395,43 +398,53 @@ function App() {
         compress: true
       });
 
-      // PDF page dimensions
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      // PDF page dimensions - using fixed pixel dimensions for better control
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
       const marginX = 15; // 15mm margins
       const marginY = 20; // 20mm margins
       const contentWidth = pageWidth - (marginX * 2);
       const contentHeight = pageHeight - (marginY * 2);
 
-      // Create temporary container for each tab
+      // Create temporary container for each tab with fixed dimensions
       const tempContainer = document.createElement('div');
       tempContainer.style.position = 'fixed';
-      tempContainer.style.left = '0';
+      tempContainer.style.left = '-9999px'; // Move offscreen instead of using z-index
       tempContainer.style.top = '0';
-      tempContainer.style.width = `${contentWidth}mm`;
-      tempContainer.style.height = `${contentHeight}mm`;
-      tempContainer.style.backgroundColor = theme.background;
-      tempContainer.style.color = theme.text;
-      tempContainer.style.fontFamily = theme.textFont || 'serif';
-      tempContainer.style.zIndex = '10000';
+      tempContainer.style.width = '794px'; // A4 width in pixels at 96 DPI
+      tempContainer.style.height = '1123px'; // A4 height in pixels at 96 DPI
+      tempContainer.style.backgroundColor = theme.background || '#ffffff';
+      tempContainer.style.color = theme.text || '#000000';
+      tempContainer.style.fontFamily = theme.textFont || 'Arial, sans-serif';
       tempContainer.style.padding = '0';
+      tempContainer.style.margin = '0';
       tempContainer.style.boxSizing = 'border-box';
       tempContainer.style.overflow = 'hidden';
+      tempContainer.style.fontSize = '14px';
+      tempContainer.style.lineHeight = '1.5';
 
-      // Apply background image if exists
-      if (theme.backgroundImage) {
-        tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
-        tempContainer.style.backgroundSize = 'cover';
-        tempContainer.style.backgroundPosition = 'center';
-        tempContainer.style.backgroundRepeat = 'no-repeat';
-        tempContainer.style.backgroundAttachment = 'fixed';
-      } else {
-        // For predefined themes, apply background pattern
+      // Apply background pattern for predefined themes
+      if (!theme.backgroundImage) {
         const backgroundPattern = getBackgroundPattern(currentTheme);
         tempContainer.style.backgroundImage = backgroundPattern;
         tempContainer.style.backgroundSize = currentTheme === 'bulletJournal' || currentTheme === 'livreVintage' ? '40px 40px' : '20px 20px';
         tempContainer.style.backgroundPosition = '0 0';
         tempContainer.style.backgroundRepeat = 'repeat';
+      } else {
+        // For custom background images, apply them with careful opacity
+        try {
+          tempContainer.style.backgroundImage = `url(${theme.backgroundImage})`;
+          tempContainer.style.backgroundSize = 'cover';
+          tempContainer.style.backgroundPosition = 'center';
+          tempContainer.style.backgroundRepeat = 'no-repeat';
+          tempContainer.style.backgroundAttachment = 'fixed';
+        } catch (error) {
+          console.warn('Failed to apply custom background image, using fallback');
+          // Fallback to pattern background
+          const backgroundPattern = getBackgroundPattern(currentTheme);
+          tempContainer.style.backgroundImage = backgroundPattern;
+          tempContainer.style.backgroundSize = '20px 20px';
+        }
       }
 
       document.body.appendChild(tempContainer);
@@ -441,47 +454,56 @@ function App() {
         const tab = defaultTabs[i];
         const isFirstPage = i === 0;
 
-        // Create page content
+        console.log(`Processing tab ${i + 1}: ${tab.title}`);
+
+        // Create page content with enhanced background support
         const pageContent = document.createElement('div');
         pageContent.style.width = '100%';
         pageContent.style.height = '100%';
-        pageContent.style.backgroundColor = theme.backgroundImage ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.98)';
-        pageContent.style.padding = '20mm';
+        
+        // Enhanced background handling for better theme integration
+        if (theme.backgroundImage) {
+          pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.92)';
+          pageContent.style.backdropFilter = 'blur(0.5px)';
+        } else if (currentTheme === 'bulletJournal' || currentTheme === 'livreVintage') {
+          pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.96)';
+        } else {
+          pageContent.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+        }
+        
+        pageContent.style.padding = '60px 45px';
         pageContent.style.boxSizing = 'border-box';
         pageContent.style.position = 'relative';
         pageContent.style.display = 'flex';
         pageContent.style.flexDirection = 'column';
-
-        // Add background overlay for better text readability
-        if (theme.backgroundImage) {
-          const overlay = document.createElement('div');
-          overlay.style.position = 'absolute';
-          overlay.style.inset = '0';
-          overlay.style.backgroundColor = theme.background;
-          overlay.style.opacity = String(Math.min(0.8, 1 - (theme.backgroundImageOpacity || 0.1)));
-          overlay.style.pointerEvents = 'none';
-          pageContent.appendChild(overlay);
+        pageContent.style.fontFamily = 'inherit';
+        
+        // Add subtle border for themed pages
+        if (currentTheme === 'bulletJournal' || currentTheme === 'livreVintage') {
+          pageContent.style.border = `1px solid ${theme.primary || '#667eea'}20`;
+          pageContent.style.borderRadius = '8px';
+          pageContent.style.margin = '10px';
+          pageContent.style.width = 'calc(100% - 20px)';
+          pageContent.style.height = 'calc(100% - 20px)';
         }
 
         // Add page header
         const pageHeader = document.createElement('div');
-        pageHeader.style.position = 'relative';
-        pageHeader.style.zIndex = '10';
-        pageHeader.style.marginBottom = '20px';
-        pageHeader.style.paddingBottom = '15px';
-        pageHeader.style.borderBottom = `2px solid ${theme.primary}`;
+        pageHeader.style.marginBottom = '30px';
+        pageHeader.style.paddingBottom = '20px';
+        pageHeader.style.borderBottom = `3px solid ${theme.primary || '#667eea'}`;
         pageHeader.style.textAlign = 'center';
 
         if (isFirstPage) {
           // Full header for first page
           pageHeader.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
-              <span style="font-size: 28px;">📖</span>
-              <h1 style="color: ${theme.primary}; font-size: 24pt; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'serif'};">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+              <span style="font-size: 32px;">📖</span>
+              <h1 style="color: ${theme.primary || '#667eea'}; font-size: 28px; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'Arial, sans-serif'};">
                 Fiche de Lecture
               </h1>
             </div>
-            <div style="font-size: 18pt; color: ${theme.text}; margin: 0; font-weight: normal; font-family: ${theme.titleFont || 'serif'};">
+            <div style="font-size: 20px; color: ${theme.text || '#000000'}; margin: 0; font-weight: normal; font-family: ${theme.titleFont || 'Arial, sans-serif'};">
               ${sheet.auteur && sheet.titre ? `${sheet.auteur} - ${sheet.titre}` : 
                 sheet.titre || 'Sans titre'}
             </div>
@@ -490,11 +512,11 @@ function App() {
           // Simplified header for subsequent pages
           pageHeader.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="font-size: 14pt; color: ${theme.textLight}; font-style: italic;">
+              <div style="font-size: 16px; color: ${theme.textLight || '#666666'}; font-style: italic;">
                 ${sheet.auteur && sheet.titre ? `${sheet.auteur} - ${sheet.titre}` : 
                   sheet.titre || 'Sans titre'}
               </div>
-              <div style="font-size: 12pt; color: ${theme.textLight};">
+              <div style="font-size: 14px; color: ${theme.textLight || '#666666'};">
                 Page ${i + 1}
               </div>
             </div>
@@ -503,48 +525,52 @@ function App() {
 
         // Add tab title
         const tabTitle = document.createElement('div');
-        tabTitle.style.position = 'relative';
-        tabTitle.style.zIndex = '10';
         tabTitle.style.display = 'flex';
         tabTitle.style.alignItems = 'center';
-        tabTitle.style.gap = '12px';
-        tabTitle.style.margin = '20px 0';
-        tabTitle.style.padding = '15px 20px';
-        tabTitle.style.backgroundColor = `${theme.primary}15`;
+        tabTitle.style.gap = '15px';
+        tabTitle.style.margin = '20px 0 30px 0';
+        tabTitle.style.padding = '20px 25px';
+        tabTitle.style.backgroundColor = `${theme.primary || '#667eea'}15`;
         tabTitle.style.borderRadius = '10px';
-        tabTitle.style.borderLeft = `4px solid ${theme.primary}`;
+        tabTitle.style.borderLeft = `5px solid ${theme.primary || '#667eea'}`;
         tabTitle.innerHTML = `
-          <span style="font-size: 24px; min-width: 30px;">${tab.icon}</span>
-          <h2 style="color: ${theme.primary}; font-size: 20pt; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'serif'};">
+          <span style="font-size: 28px; min-width: 35px;">${tab.icon}</span>
+          <h2 style="color: ${theme.primary || '#667eea'}; font-size: 24px; margin: 0; font-weight: bold; font-family: ${theme.titleFont || 'Arial, sans-serif'};">
             ${tab.title}
           </h2>
         `;
 
         // Add tab content
         const tabContentDiv = document.createElement('div');
-        tabContentDiv.style.position = 'relative';
-        tabContentDiv.style.zIndex = '10';
         tabContentDiv.style.flex = '1';
         tabContentDiv.style.overflow = 'hidden';
-        tabContentDiv.style.fontSize = '12pt';
+        tabContentDiv.style.fontSize = '14px';
         tabContentDiv.style.lineHeight = '1.6';
 
         // Get actual tab content
         const actualTabContent = getTabContentForPDF(tab.id);
         if (actualTabContent) {
           tabContentDiv.appendChild(actualTabContent);
+        } else {
+          console.warn(`No content found for tab: ${tab.id}`);
+          // Add fallback content
+          const fallbackDiv = document.createElement('div');
+          fallbackDiv.style.padding = '20px';
+          fallbackDiv.style.textAlign = 'center';
+          fallbackDiv.style.color = theme.textLight || '#666666';
+          fallbackDiv.style.fontStyle = 'italic';
+          fallbackDiv.textContent = 'Aucun contenu disponible pour cette section';
+          tabContentDiv.appendChild(fallbackDiv);
         }
 
         // Add page footer
         const pageFooter = document.createElement('div');
-        pageFooter.style.position = 'relative';
-        pageFooter.style.zIndex = '10';
-        pageFooter.style.marginTop = '20px';
-        pageFooter.style.paddingTop = '15px';
-        pageFooter.style.borderTop = `1px solid ${theme.border}`;
+        pageFooter.style.marginTop = '30px';
+        pageFooter.style.paddingTop = '20px';
+        pageFooter.style.borderTop = `1px solid ${theme.border || '#e9ecef'}`;
         pageFooter.style.textAlign = 'center';
-        pageFooter.style.color = theme.textLight;
-        pageFooter.style.fontSize = '10pt';
+        pageFooter.style.color = theme.textLight || '#666666';
+        pageFooter.style.fontSize = '12px';
         pageFooter.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <span>📖 Fiche de Lecture</span>
@@ -563,81 +589,146 @@ function App() {
         tempContainer.appendChild(pageContent);
 
         // Wait for content to render
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Capture page with html2canvas
-        const canvas = await html2canvas(tempContainer, {
-          width: tempContainer.offsetWidth,
-          height: tempContainer.offsetHeight,
-          backgroundColor: theme.background,
+        // Capture page with html2canvas with enhanced background support
+        const canvasOptions = {
+          width: 794,
+          height: 1123,
+          backgroundColor: theme.background || '#ffffff',
           scale: 2,
           useCORS: true,
           logging: false,
           allowTaint: true,
           foreignObjectRendering: true,
+          imageTimeout: 15000,
+          // Enhanced options for better background capture
+          removeContainer: true,
+          ignoreElements: (element: Element) => {
+            // Ignore elements that might cause issues with background rendering
+            return element.tagName === 'SCRIPT' || element.tagName === 'STYLE';
+          },
           onclone: (clonedDoc: Document) => {
-            // Add styles to ensure proper rendering
+            // Add comprehensive styles to ensure proper rendering
             const style = document.createElement('style');
             style.textContent = `
               * {
                 -webkit-print-color-adjust: exact !important;
                 color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                box-sizing: border-box !important;
               }
-              .editable, .editable[contenteditable="true"] {
-                min-height: 1.5em !important;
-                border: 1px dashed #ccc !important;
-                padding: 8px !important;
-                margin: 5px 0 !important;
-                border-radius: 4px !important;
-                background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(255,255,255,0.05)'} !important;
+              
+              body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: ${theme.background || '#ffffff'} !important;
               }
-              .citations {
-                background: ${theme.background === '#ffffff' ? '#f8f9fa' : 'rgba(0,0,0,0.05)'} !important;
-                padding: 15px !important;
-                border-radius: 8px !important;
-                margin: 15px 0 !important;
-              }
-              .citation {
-                border-left: 3px solid ${theme.primary} !important;
-                padding-left: 10px !important;
-                margin: 10px 0 !important;
-              }
-              .citation-page {
-                background: ${theme.primary} !important;
-                color: white !important;
-                padding: 2px 8px !important;
-                border-radius: 10px !important;
-                font-size: 0.8em !important;
-                display: inline-block !important;
-                margin-top: 5px !important;
-              }
+              
               .pdf-section {
-                margin-bottom: 20px !important;
-                padding: 15px !important;
-                background: rgba(255, 255, 255, 0.8) !important;
+                margin-bottom: 25px !important;
+                padding: 20px !important;
+                background: rgba(255, 255, 255, 0.9) !important;
                 border-radius: 8px !important;
-                border: 1px solid ${theme.border} !important;
+                border: 1px solid ${theme.border || '#e9ecef'} !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
               }
+              
               .pdf-section-title {
-                color: ${theme.primary} !important;
-                font-size: 14pt !important;
+                color: ${theme.primary || '#667eea'} !important;
+                font-size: 16px !important;
                 font-weight: bold !important;
-                margin-bottom: 10px !important;
-                border-bottom: 1px solid ${theme.primary} !important;
-                padding-bottom: 5px !important;
+                margin-bottom: 15px !important;
+                border-bottom: 2px solid ${theme.primary || '#667eea'} !important;
+                padding-bottom: 8px !important;
+                font-family: ${theme.titleFont || 'Arial, sans-serif'} !important;
               }
+              
               .pdf-section-content {
-                color: ${theme.text} !important;
-                font-size: 11pt !important;
-                line-height: 1.5 !important;
-                min-height: 40px !important;
+                color: ${theme.text || '#000000'} !important;
+                font-size: 13px !important;
+                line-height: 1.6 !important;
+                min-height: 50px !important;
                 white-space: pre-wrap !important;
+                font-family: ${theme.textFont || 'Arial, sans-serif'} !important;
               }
+              
+              .citations {
+                background: ${theme.secondary || '#764ba2'}15 !important;
+                padding: 20px !important;
+                border-radius: 8px !important;
+                margin: 20px 0 !important;
+                border-left: 4px solid ${theme.secondary || '#764ba2'} !important;
+              }
+              
+              .citation {
+                border-left: 3px solid ${theme.secondary || '#764ba2'} !important;
+                padding-left: 15px !important;
+                margin: 15px 0 !important;
+                background: rgba(255, 255, 255, 0.8) !important;
+                padding: 12px !important;
+                border-radius: 6px !important;
+                font-style: italic !important;
+              }
+              
+              .citation-text {
+                color: ${theme.text || '#000000'} !important;
+                margin-bottom: 8px !important;
+                font-size: 13px !important;
+                line-height: 1.4 !important;
+              }
+              
+              .citation-page {
+                color: ${theme.textLight || '#666666'} !important;
+                font-size: 11px !important;
+                text-align: right !important;
+                font-style: normal !important;
+              }
+              
+              /* Enhanced theme-specific styles */
+              ${currentTheme === 'bulletJournal' ? `
+                .pdf-section {
+                  border-left: 4px solid ${theme.primary || '#F9A825'} !important;
+                  position: relative !important;
+                }
+                .pdf-section::before {
+                  content: "•" !important;
+                  position: absolute !important;
+                  left: -15px !important;
+                  top: 20px !important;
+                  color: ${theme.primary || '#F9A825'} !important;
+                  font-size: 20px !important;
+                }
+              ` : ''}
+              
+              ${currentTheme === 'livreVintage' ? `
+                .pdf-section {
+                  border: 1px solid ${theme.primary || '#8D6E63'}40 !important;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+                  background: rgba(250, 243, 224, 0.9) !important;
+                }
+                .pdf-section-title {
+                  font-family: 'Playfair Display', serif !important;
+                  text-decoration: underline !important;
+                  text-decoration-color: ${theme.primary || '#8D6E63'} !important;
+                }
+              ` : ''}
             `;
             clonedDoc.head.appendChild(style);
+            
+            // Add theme-specific fonts if available
+            if (theme.titleFont && theme.titleFont !== 'Arial, sans-serif') {
+              const fontLink = document.createElement('link');
+              fontLink.rel = 'stylesheet';
+              fontLink.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:wght@400;500&family=Caveat:wght@400;700&family=Quicksand:wght@300;400;500&display=swap';
+              clonedDoc.head.appendChild(fontLink);
+            }
           }
-        });
+        };
+        
+        const canvas = await html2canvas(tempContainer, canvasOptions);
+
+        console.log(`Canvas captured for tab ${i + 1}`);
 
         // Add page to PDF
         if (i > 0) {
@@ -656,11 +747,11 @@ function App() {
       // Clean up
       document.body.removeChild(tempContainer);
 
-      alert(`PDF généré avec succès ! ${defaultTabs.length} pages créées avec design préservé.`);
+      alert(`PDF généré avec succès ! ${defaultTabs.length} pages créées avec thème "${themes[currentTheme as keyof typeof themes]?.name || 'personnalisé'}" et arrière-plan intégré.`);
 
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
-      alert('Une erreur est survenue lors de la génération du PDF');
+      alert('Une erreur est survenue lors de la génération du PDF: ' + error.message);
     }
   };
 
@@ -1160,7 +1251,7 @@ function App() {
       const fileName = `fiche-lecture-${sheet.titre.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled'}-${format}.zip`;
       downloadFile(zipBlob, fileName);
       
-      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées avec design amélioré.`);
+      alert(`Export ${format.toUpperCase()} terminé ! ${defaultTabs.length} images générées avec thème "${themes[currentTheme as keyof typeof themes]?.name || 'personnalisé'}" et arrière-plan intégré.`);
       
     } catch (error) {
       console.error('Error exporting to images:', error);
@@ -1170,6 +1261,9 @@ function App() {
 
   // Helper function to get tab content for PDF export with optimized styling
   const getTabContentForPDF = (tabId: string): HTMLElement | null => {
+    console.log(`Getting PDF content for tab: ${tabId}`);
+    console.log('Sheet data available:', !!sheet);
+    
     const contentDiv = document.createElement('div');
     contentDiv.style.height = '100%';
     contentDiv.style.overflow = 'hidden';
@@ -1177,41 +1271,47 @@ function App() {
     const createPDFSection = (title: string, content: string, isMain = false) => {
       const section = document.createElement('div');
       section.className = 'pdf-section';
-      section.style.marginBottom = '20px';
-      section.style.padding = '15px';
-      section.style.backgroundColor = isMain ? `${theme.primary}15` : 'rgba(255, 255, 255, 0.8)';
+      section.style.marginBottom = '25px';
+      section.style.padding = '20px';
+      section.style.backgroundColor = isMain ? `${theme.primary || '#667eea'}15` : 'rgba(255, 255, 255, 0.9)';
       section.style.borderRadius = '8px';
-      section.style.border = `1px solid ${theme.border}`;
+      section.style.border = `1px solid ${theme.border || '#e9ecef'}`;
+      section.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
       
       if (isMain) {
-        section.style.borderLeft = `4px solid ${theme.primary}`;
+        section.style.borderLeft = `4px solid ${theme.primary || '#667eea'}`;
       }
       
       const titleElement = document.createElement('h3');
       titleElement.className = 'pdf-section-title';
-      titleElement.style.color = theme.primary;
-      titleElement.style.marginBottom = '10px';
-      titleElement.style.fontSize = '14pt';
+      titleElement.style.color = theme.primary || '#667eea';
+      titleElement.style.marginBottom = '15px';
+      titleElement.style.fontSize = '16px';
       titleElement.style.fontWeight = 'bold';
-      titleElement.style.fontFamily = theme.titleFont || 'serif';
-      titleElement.style.borderBottom = `1px solid ${theme.primary}`;
-      titleElement.style.paddingBottom = '5px';
+      titleElement.style.fontFamily = theme.titleFont || 'Arial, sans-serif';
+      titleElement.style.borderBottom = `2px solid ${theme.primary || '#667eea'}`;
+      titleElement.style.paddingBottom = '8px';
       titleElement.textContent = title;
       
       const contentElement = document.createElement('div');
       contentElement.className = 'pdf-section-content';
-      contentElement.style.color = theme.text;
-      contentElement.style.fontSize = '11pt';
-      contentElement.style.lineHeight = '1.5';
-      contentElement.style.minHeight = '40px';
-      contentElement.style.fontFamily = theme.textFont || 'serif';
+      contentElement.style.color = theme.text || '#000000';
+      contentElement.style.fontSize = '13px';
+      contentElement.style.lineHeight = '1.6';
+      contentElement.style.minHeight = '50px';
+      contentElement.style.fontFamily = theme.textFont || 'Arial, sans-serif';
+      
+      // Clean and validate content
+      const cleanedContent = content ? content.toString().trim() : '';
+      
+      console.log(`Section "${title}" content:`, cleanedContent);
       
       // Handle HTML content or plain text
-      if (content && content.includes('<')) {
-        contentElement.innerHTML = content;
+      if (cleanedContent && cleanedContent.includes('<')) {
+        contentElement.innerHTML = cleanedContent;
       } else {
         contentElement.style.whiteSpace = 'pre-wrap';
-        contentElement.textContent = content || 'Non renseigné';
+        contentElement.textContent = cleanedContent || 'Non renseigné';
       }
       
       section.appendChild(titleElement);
@@ -1243,41 +1343,62 @@ function App() {
         contentDiv.appendChild(createPDFSection('Intuitions personnelles', sheet.intuitions || 'Non renseigné'));
         
         // Add citations section with special styling
-        if (sheet.citations && sheet.citations.some(c => c.text)) {
+        if (sheet.citations && sheet.citations.length > 0 && sheet.citations.some(c => c.text && c.text.trim())) {
           const citationsDiv = document.createElement('div');
           citationsDiv.className = 'citations';
-          citationsDiv.style.marginBottom = '20px';
-          citationsDiv.style.padding = '15px';
-          citationsDiv.style.backgroundColor = `${theme.secondary}15`;
+          citationsDiv.style.marginBottom = '25px';
+          citationsDiv.style.padding = '20px';
+          citationsDiv.style.backgroundColor = `${theme.secondary || '#764ba2'}15`;
           citationsDiv.style.borderRadius = '8px';
-          citationsDiv.style.border = `1px solid ${theme.secondary}30`;
-          citationsDiv.style.borderLeft = `4px solid ${theme.secondary}`;
+          citationsDiv.style.border = `1px solid ${theme.secondary || '#764ba2'}30`;
+          citationsDiv.style.borderLeft = `4px solid ${theme.secondary || '#764ba2'}`;
           
           const citationsTitle = document.createElement('h3');
-          citationsTitle.style.color = theme.secondary;
-          citationsTitle.style.marginBottom = '10px';
-          citationsTitle.style.fontSize = '14pt';
+          citationsTitle.style.color = theme.secondary || '#764ba2';
+          citationsTitle.style.marginBottom = '15px';
+          citationsTitle.style.fontSize = '16px';
           citationsTitle.style.fontWeight = 'bold';
-          citationsTitle.style.borderBottom = `1px solid ${theme.secondary}`;
-          citationsTitle.style.paddingBottom = '5px';
+          citationsTitle.style.borderBottom = `2px solid ${theme.secondary || '#764ba2'}`;
+          citationsTitle.style.paddingBottom = '8px';
+          citationsTitle.style.fontFamily = theme.titleFont || 'Arial, sans-serif';
           citationsTitle.textContent = 'Citations clés';
           citationsDiv.appendChild(citationsTitle);
           
-          sheet.citations.filter(c => c.text).forEach(citation => {
+          const validCitations = sheet.citations.filter(c => c.text && c.text.trim());
+          console.log('Valid citations for PDF:', validCitations);
+          
+          validCitations.forEach((citation, index) => {
             const citationBlock = document.createElement('div');
             citationBlock.className = 'citation';
-            citationBlock.style.marginBottom = '10px';
-            citationBlock.style.padding = '10px';
+            citationBlock.style.marginBottom = '15px';
+            citationBlock.style.padding = '12px';
             citationBlock.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
             citationBlock.style.borderRadius = '6px';
-            citationBlock.style.borderLeft = `3px solid ${theme.secondary}`;
-            citationBlock.style.fontSize = '10pt';
+            citationBlock.style.borderLeft = `3px solid ${theme.secondary || '#764ba2'}`;
+            citationBlock.style.fontSize = '13px';
             citationBlock.style.fontStyle = 'italic';
             citationBlock.style.lineHeight = '1.4';
-            citationBlock.innerHTML = `
-              <div style="color: ${theme.text}; margin-bottom: 5px;">"${citation.text}"</div>
-              ${citation.page ? `<div style="color: ${theme.textLight}; font-size: 9pt; text-align: right;">— Page ${citation.page}</div>` : ''}
-            `;
+            
+            const citationText = document.createElement('div');
+            citationText.className = 'citation-text';
+            citationText.style.color = theme.text || '#000000';
+            citationText.style.marginBottom = '8px';
+            citationText.style.fontSize = '13px';
+            citationText.style.lineHeight = '1.4';
+            citationText.textContent = `"${citation.text}"`;
+            citationBlock.appendChild(citationText);
+            
+            if (citation.page && citation.page.trim()) {
+              const citationPage = document.createElement('div');
+              citationPage.className = 'citation-page';
+              citationPage.style.color = theme.textLight || '#666666';
+              citationPage.style.fontSize = '11px';
+              citationPage.style.textAlign = 'right';
+              citationPage.style.fontStyle = 'normal';
+              citationPage.textContent = `— Page ${citation.page}`;
+              citationBlock.appendChild(citationPage);
+            }
+            
             citationsDiv.appendChild(citationBlock);
           });
           
@@ -1305,6 +1426,92 @@ function App() {
         contentDiv.appendChild(createPDFSection('Notes personnelles', sheet.notes || 'Non renseigné'));
         contentDiv.appendChild(createPDFSection('Schémas et cartes', sheet.schemas || 'Non renseigné'));
         contentDiv.appendChild(createPDFSection('Références', sheet.references || 'Non renseigné'));
+        break;
+      case 'custom-zones-main':
+        // Add custom zones content for PDF export
+        const customZonesData = localStorage.getItem('customZones');
+        if (customZonesData) {
+          try {
+            const customZones = JSON.parse(customZonesData);
+            const visibleZones = customZones.filter((zone: any) => zone.isVisible && !zone.isDeleted);
+            
+            if (visibleZones.length > 0) {
+              const zonesByType = {
+                text: visibleZones.filter((z: any) => z.type === 'text'),
+                citation: visibleZones.filter((z: any) => z.type === 'citation'),
+                notes: visibleZones.filter((z: any) => z.type === 'notes'),
+                import: visibleZones.filter((z: any) => z.type === 'import'),
+                custom: visibleZones.filter((z: any) => z.type === 'custom')
+              };
+              
+              // Add each zone type as a section
+              Object.entries(zonesByType).forEach(([type, zones]) => {
+                if (zones.length > 0) {
+                  const typeConfig = {
+                    text: { title: 'Zones de texte', icon: '📝' },
+                    citation: { title: 'Zones de citation', icon: '💬' },
+                    notes: { title: 'Zones de notes', icon: '📌' },
+                    import: { title: 'Zones d\'importation', icon: '📁' },
+                    custom: { title: 'Zones personnalisées', icon: '🎨' }
+                  };
+                  
+                  const typeSection = document.createElement('div');
+                  typeSection.style.marginBottom = '30px';
+                  typeSection.style.padding = '20px';
+                  typeSection.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                  typeSection.style.borderRadius = '8px';
+                  typeSection.style.border = '1px solid #e0e0e0';
+                  
+                  const typeTitle = document.createElement('h4');
+                  typeTitle.style.color = theme.primary || '#667eea';
+                  typeTitle.style.fontSize = '16px';
+                  typeTitle.style.fontWeight = 'bold';
+                  typeTitle.style.marginBottom = '15px';
+                  typeTitle.style.borderBottom = `2px solid ${theme.primary || '#667eea'}`;
+                  typeTitle.style.paddingBottom = '5px';
+                  typeTitle.textContent = `${typeConfig[type as keyof typeof typeConfig].icon} ${typeConfig[type as keyof typeof typeConfig].title}`;
+                  typeSection.appendChild(typeTitle);
+                  
+                  zones.forEach((zone: any) => {
+                    const zoneDiv = document.createElement('div');
+                    zoneDiv.style.marginBottom = '15px';
+                    zoneDiv.style.padding = '15px';
+                    zoneDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+                    zoneDiv.style.borderRadius = '6px';
+                    zoneDiv.style.borderLeft = '3px solid #ccc';
+                    
+                    const zoneTitle = document.createElement('h5');
+                    zoneTitle.style.fontSize = '14px';
+                    zoneTitle.style.fontWeight = 'bold';
+                    zoneTitle.style.marginBottom = '8px';
+                    zoneTitle.style.color = theme.text || '#000000';
+                    zoneTitle.textContent = zone.title;
+                    zoneDiv.appendChild(zoneTitle);
+                    
+                    const zoneContent = document.createElement('div');
+                    zoneContent.style.fontSize = '13px';
+                    zoneContent.style.lineHeight = '1.5';
+                    zoneContent.style.color = theme.text || '#000000';
+                    zoneContent.style.whiteSpace = 'pre-wrap';
+                    zoneContent.textContent = zone.content || 'Contenu non renseigné';
+                    zoneDiv.appendChild(zoneContent);
+                    
+                    typeSection.appendChild(zoneDiv);
+                  });
+                  
+                  contentDiv.appendChild(typeSection);
+                }
+              });
+            } else {
+              contentDiv.appendChild(createPDFSection('Zones personnalisées', 'Aucune zone personnalisée créée', true));
+            }
+          } catch (error) {
+            console.error('Error loading custom zones for PDF:', error);
+            contentDiv.appendChild(createPDFSection('Zones personnalisées', 'Erreur lors du chargement des zones', true));
+          }
+        } else {
+          contentDiv.appendChild(createPDFSection('Zones personnalisées', 'Aucune zone personnalisée créée', true));
+        }
         break;
       default:
         contentDiv.appendChild(createPDFSection('Contenu personnalisé', 'Contenu de l\'onglet personnalisé', true));
