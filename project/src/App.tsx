@@ -8,8 +8,10 @@ import { downloadFile, openFileInNewTab } from './exports/utils';
 import CustomThemeCreator from './components/CustomThemeCreator';
 import TabManager from './components/TabManager';
 import MainToolbar from './components/MainToolbar';
+import SimpleColorPicker from './components/SimpleColorPicker';
 import { useCustomThemes } from './hooks/useCustomThemes';
 import { useHistoryManager } from './hooks/useHistoryManager';
+import { useDynamicTabs } from './hooks/useDynamicTabs';
 import { ReadingSheet } from './components/sections/SectionComponents';
 
 // Link Manager Component
@@ -278,8 +280,10 @@ function App() {
   const [customThemeData, setCustomThemeData] = useState<any>(null);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
+  const [showSimpleColorPicker, setShowSimpleColorPicker] = useState(false);
   const { customThemes } = useCustomThemes();
-  const { undo, redo, getHistorySummary } = useHistoryManager();
+  const { undo, redo, getHistorySummary, addToHistory } = useHistoryManager();
+  const { activeTab, setActiveTab } = useDynamicTabs();
   
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
@@ -329,6 +333,20 @@ function App() {
   }, [sheet]);
 
   const updateField = (field: keyof ReadingSheet, value: string) => {
+    const previousValue = sheet[field];
+    
+    // Add to history before making the change
+    addToHistory({
+      type: 'content',
+      description: `Modification du champ "${field}"`,
+      target: {
+        type: 'sheet',
+        id: field
+      },
+      before: { value: previousValue },
+      after: { value }
+    });
+    
     setSheet(prev => ({ ...prev, [field]: value }));
   };
 
@@ -852,119 +870,109 @@ function App() {
 
   // Main toolbar handlers
   const handleUndo = useCallback(() => {
-    undo();
+    console.log('Undo button clicked');
+    const result = undo();
+    if (!result) {
+      console.warn('Undo failed or no actions to undo');
+    }
+    // Force re-render by updating sheet from localStorage
+    const savedSheet = localStorage.getItem('ficheAnalyse');
+    if (savedSheet) {
+      try {
+        const parsedSheet = JSON.parse(savedSheet);
+        setSheet(parsedSheet);
+      } catch (error) {
+        console.error('Error parsing saved sheet:', error);
+      }
+    }
   }, [undo]);
 
   const handleRedo = useCallback(() => {
-    redo();
+    console.log('Redo button clicked');
+    const result = redo();
+    if (!result) {
+      console.warn('Redo failed or no actions to redo');
+    }
+    // Force re-render by updating sheet from localStorage
+    const savedSheet = localStorage.getItem('ficheAnalyse');
+    if (savedSheet) {
+      try {
+        const parsedSheet = JSON.parse(savedSheet);
+        setSheet(parsedSheet);
+      } catch (error) {
+        console.error('Error parsing saved sheet:', error);
+      }
+    }
   }, [redo]);
 
   const handleAddTextZone = useCallback(() => {
-    // Navigate to custom zones tab and trigger text zone creation
-    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
-    if (customZonesTab) {
-      // Find and click the custom zones tab
-      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
-      const customZonesLink = Array.from(tabElements).find(el => 
-        el.getAttribute('data-tab-id') === 'custom-zones-main'
-      );
-      if (customZonesLink) {
-        (customZonesLink as HTMLElement).click();
-        // Trigger zone creation after a short delay
-        setTimeout(() => {
-          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
-          if (addZoneButton) {
-            (addZoneButton as HTMLElement).click();
-            // Select text zone after a short delay
-            setTimeout(() => {
-              const textZoneButton = document.querySelector('[data-zone-type="text"]');
-              if (textZoneButton) {
-                (textZoneButton as HTMLElement).click();
-              }
-            }, 100);
-          }
-        }, 100);
-      }
+    // Check if we're on a default tab - if so, switch to custom zones tab
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      // Wait for tab to load, then trigger zone creation
+      setTimeout(() => {
+        triggerZoneCreation('text');
+      }, 200);
+    } else {
+      // Already on custom zones tab, trigger immediately
+      triggerZoneCreation('text');
     }
-  }, []);
+  }, [activeTab, setActiveTab]);
 
   const handleAddImportZone = useCallback(() => {
-    // Navigate to custom zones tab and trigger import zone creation
-    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
-    if (customZonesTab) {
-      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
-      const customZonesLink = Array.from(tabElements).find(el => 
-        el.getAttribute('data-tab-id') === 'custom-zones-main'
-      );
-      if (customZonesLink) {
-        (customZonesLink as HTMLElement).click();
-        setTimeout(() => {
-          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
-          if (addZoneButton) {
-            (addZoneButton as HTMLElement).click();
-            setTimeout(() => {
-              const importZoneButton = document.querySelector('[data-zone-type="import"]');
-              if (importZoneButton) {
-                (importZoneButton as HTMLElement).click();
-              }
-            }, 100);
-          }
-        }, 100);
-      }
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      setTimeout(() => {
+        triggerZoneCreation('import');
+      }, 200);
+    } else {
+      triggerZoneCreation('import');
     }
-  }, []);
+  }, [activeTab, setActiveTab]);
 
   const handleAddCitationZone = useCallback(() => {
-    // Navigate to custom zones tab and trigger citation zone creation
-    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
-    if (customZonesTab) {
-      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
-      const customZonesLink = Array.from(tabElements).find(el => 
-        el.getAttribute('data-tab-id') === 'custom-zones-main'
-      );
-      if (customZonesLink) {
-        (customZonesLink as HTMLElement).click();
-        setTimeout(() => {
-          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
-          if (addZoneButton) {
-            (addZoneButton as HTMLElement).click();
-            setTimeout(() => {
-              const citationZoneButton = document.querySelector('[data-zone-type="citation"]');
-              if (citationZoneButton) {
-                (citationZoneButton as HTMLElement).click();
-              }
-            }, 100);
-          }
-        }, 100);
-      }
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      setTimeout(() => {
+        triggerZoneCreation('citation');
+      }, 200);
+    } else {
+      triggerZoneCreation('citation');
     }
-  }, []);
+  }, [activeTab, setActiveTab]);
 
   const handleAddNotesZone = useCallback(() => {
-    // Navigate to custom zones tab and trigger notes zone creation
-    const customZonesTab = document.querySelector('[data-testid="tab-manager"]');
-    if (customZonesTab) {
-      const tabElements = customZonesTab.querySelectorAll('[data-tab-id]');
-      const customZonesLink = Array.from(tabElements).find(el => 
-        el.getAttribute('data-tab-id') === 'custom-zones-main'
-      );
-      if (customZonesLink) {
-        (customZonesLink as HTMLElement).click();
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      setTimeout(() => {
+        triggerZoneCreation('notes');
+      }, 200);
+    } else {
+      triggerZoneCreation('notes');
+    }
+  }, [activeTab, setActiveTab]);
+
+  // Helper function to trigger zone creation
+  const triggerZoneCreation = (zoneType: string) => {
+    try {
+      // First, try to find and click the add zone button
+      const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
+      if (addZoneButton) {
+        (addZoneButton as HTMLElement).click();
+        // Wait for dropdown to appear, then select zone type
         setTimeout(() => {
-          const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
-          if (addZoneButton) {
-            (addZoneButton as HTMLElement).click();
-            setTimeout(() => {
-              const notesZoneButton = document.querySelector('[data-zone-type="notes"]');
-              if (notesZoneButton) {
-                (notesZoneButton as HTMLElement).click();
-              }
-            }, 100);
+          const zoneTypeButton = document.querySelector(`[data-zone-type="${zoneType}"]`);
+          if (zoneTypeButton) {
+            (zoneTypeButton as HTMLElement).click();
           }
         }, 100);
+      } else {
+        console.warn('Add zone button not found');
       }
+    } catch (error) {
+      console.error('Error triggering zone creation:', error);
     }
-  }, []);
+  };
 
   const handleAddTab = useCallback(() => {
     // Find and click the add tab button
@@ -975,8 +983,49 @@ function App() {
   }, []);
 
   const handleOpenColorPicker = useCallback(() => {
-    setIsThemeSelectorOpen(true);
+    setShowSimpleColorPicker(true);
   }, []);
+
+  const handleColorChange = useCallback((color: string) => {
+    // Apply the selected color to the current theme
+    if (currentTheme !== 'custom') {
+      // Create a custom theme based on the current theme with the new color
+      const baseTheme = themes[currentTheme as keyof typeof themes];
+      const customTheme = {
+        ...baseTheme,
+        id: `custom-${Date.now()}`,
+        name: `Personnalisé (${color})`,
+        primary: color,
+        secondary: adjustColorBrightness(color, -0.1),
+        accent: adjustColorBrightness(color, 0.1),
+        gradient: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(color, -0.1)} 100%)`
+      };
+      setCustomThemeData(customTheme);
+      setCurrentTheme('custom');
+    } else if (customThemeData) {
+      // Update existing custom theme
+      const updatedTheme = {
+        ...customThemeData,
+        primary: color,
+        secondary: adjustColorBrightness(color, -0.1),
+        accent: adjustColorBrightness(color, 0.1),
+        gradient: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(color, -0.1)} 100%)`
+      };
+      setCustomThemeData(updatedTheme);
+    }
+  }, [currentTheme, customThemeData]);
+
+  // Helper function to adjust color brightness
+  const adjustColorBrightness = (color: string, percent: number) => {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent * 100);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  };
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -1872,6 +1921,15 @@ function App() {
       {currentTheme === 'bulletJournal' && <BulletDecorations theme={theme} />}
       {currentTheme === 'livreVintage' && <VintageDecorations theme={theme} />}
 
+      {/* Simple Color Picker */}
+      {showSimpleColorPicker && (
+        <SimpleColorPicker
+          onColorChange={handleColorChange}
+          onClose={() => setShowSimpleColorPicker(false)}
+          currentColor={theme.primary}
+        />
+      )}
+
       {/* Theme Controls */}
       {isThemeSelectorOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setIsThemeSelectorOpen(false)}>
@@ -2127,6 +2185,7 @@ function App() {
             addCitation={addCitation}
             removeCitation={removeCitation}
             theme={theme}
+            activeTab={activeTab}
             onTabsChange={(newTabs) => {
               // Handle tab changes if needed
             }}

@@ -50,6 +50,7 @@ interface TabManagerProps {
   addCitation?: () => void;
   removeCitation?: (index: number) => void;
   theme?: any;
+  activeTab?: string;
 }
 
 interface SortableTabProps {
@@ -197,7 +198,8 @@ const TabManager: React.FC<TabManagerProps> = ({
   updateCitation,
   addCitation,
   removeCitation,
-  theme
+  theme,
+  activeTab: externalActiveTab
 }) => {
   const { tabs, activeTab, setActiveTab, addTab, deleteTab, updateTab } = useDynamicTabs();
   const { 
@@ -207,6 +209,9 @@ const TabManager: React.FC<TabManagerProps> = ({
     restoreZone 
   } = useZoneCustomizations();
   const { addToHistory, isUndoRedoOperation } = useHistoryManager();
+  
+  // Use external activeTab if provided, otherwise use internal
+  const currentActiveTab = externalActiveTab || activeTab;
   
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -411,7 +416,7 @@ const TabManager: React.FC<TabManagerProps> = ({
     }
   };
 
-  const activeTabData = tabs.find(tab => tab.id === activeTab);
+  const activeTabData = tabs.find(tab => tab.id === currentActiveTab);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full" data-testid="tab-manager">
@@ -524,7 +529,7 @@ const TabManager: React.FC<TabManagerProps> = ({
                   <SortableTab
                     key={tab.id}
                     tab={tab}
-                    isActive={activeTab === tab.id}
+                    isActive={currentActiveTab === tab.id}
                     onSelect={setActiveTab}
                     onEdit={handleEditTab}
                     onDelete={handleDeleteTab}
