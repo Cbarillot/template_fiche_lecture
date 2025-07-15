@@ -77,6 +77,7 @@ const ZoneTypeDropdown: React.FC<ZoneTypeDropdownProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 rounded-full text-white transition-all duration-200 hover:opacity-80 shadow-lg group"
         style={{ backgroundColor: theme?.primary || '#667eea' }}
+        data-testid="add-zone-button"
       >
         <Plus size={20} className="transition-transform duration-200 group-hover:rotate-90" />
         <span className="font-medium">Ajouter une zone</span>
@@ -106,6 +107,7 @@ const ZoneTypeDropdown: React.FC<ZoneTypeDropdownProps> = ({
                   key={config.id}
                   onClick={() => handleZoneTypeClick(config.id)}
                   className="w-full p-3 text-left rounded-lg hover:bg-gray-50 transition-colors duration-150 group"
+                  data-zone-type={config.id}
                 >
                   <div className="flex items-start gap-3">
                     <div 

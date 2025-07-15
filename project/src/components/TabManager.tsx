@@ -23,6 +23,7 @@ import { useZoneCustomizations } from '../hooks/useZoneCustomizations';
 import { useHistoryManager } from '../hooks/useHistoryManager';
 import {
   ReadingSheet,
+  TitreSection,
   ResumeArchitectureSection,
   AnalyseStylistiqueSection,
   ProblematiquesEnjeuxSection,
@@ -50,6 +51,7 @@ interface TabManagerProps {
   addCitation?: () => void;
   removeCitation?: (index: number) => void;
   theme?: any;
+  activeTab?: string;
 }
 
 interface SortableTabProps {
@@ -108,6 +110,7 @@ const SortableTab: React.FC<SortableTabProps> = ({
         ${isCollapsed ? 'justify-center' : ''}
       `}
       title={isCollapsed ? tab.title : ''}
+      data-tab-id={tab.id}
     >
       {/* Drag Handle */}
       {!isCollapsed && (
@@ -196,7 +199,8 @@ const TabManager: React.FC<TabManagerProps> = ({
   updateCitation,
   addCitation,
   removeCitation,
-  theme
+  theme,
+  activeTab: externalActiveTab
 }) => {
   const { tabs, activeTab, setActiveTab, addTab, deleteTab, updateTab } = useDynamicTabs();
   const { 
@@ -206,6 +210,9 @@ const TabManager: React.FC<TabManagerProps> = ({
     restoreZone 
   } = useZoneCustomizations();
   const { addToHistory, isUndoRedoOperation } = useHistoryManager();
+  
+  // Use external activeTab if provided, otherwise use internal
+  const currentActiveTab = externalActiveTab || activeTab;
   
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -308,6 +315,8 @@ const TabManager: React.FC<TabManagerProps> = ({
     };
 
     switch (tabId) {
+      case 'titre':
+        return <TitreSection {...sectionProps} />;
       case 'resume-architecture':
         return <ResumeArchitectureSection {...sectionProps} />;
       case 'analyse-stylistique':
@@ -410,7 +419,7 @@ const TabManager: React.FC<TabManagerProps> = ({
     }
   };
 
-  const activeTabData = tabs.find(tab => tab.id === activeTab);
+  const activeTabData = tabs.find(tab => tab.id === currentActiveTab);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full" data-testid="tab-manager">
@@ -423,7 +432,7 @@ const TabManager: React.FC<TabManagerProps> = ({
       
       {/* Tab Sidebar */}
       <div className={`flex-shrink-0 transition-all duration-300 ${
-        isTabSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'
+        isTabSidebarCollapsed ? 'lg:w-16' : 'lg:w-96'
       }`}>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-4">
@@ -451,6 +460,7 @@ const TabManager: React.FC<TabManagerProps> = ({
                   onClick={() => setShowAddForm(!showAddForm)}
                   className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Ajouter un onglet"
+                  data-testid="add-tab-button"
                 >
                   <Plus size={18} />
                 </button>
@@ -522,7 +532,7 @@ const TabManager: React.FC<TabManagerProps> = ({
                   <SortableTab
                     key={tab.id}
                     tab={tab}
-                    isActive={activeTab === tab.id}
+                    isActive={currentActiveTab === tab.id}
                     onSelect={setActiveTab}
                     onEdit={handleEditTab}
                     onDelete={handleDeleteTab}

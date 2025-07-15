@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Save, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -7,7 +7,11 @@ import { exportSimple, exportModern, exportWebStyle, exportSimpleWeb, ExportOpti
 import { downloadFile, openFileInNewTab } from './exports/utils';
 import CustomThemeCreator from './components/CustomThemeCreator';
 import TabManager from './components/TabManager';
+import MainToolbar from './components/MainToolbar';
+import SimpleColorPicker from './components/SimpleColorPicker';
 import { useCustomThemes } from './hooks/useCustomThemes';
+import { useHistoryManager } from './hooks/useHistoryManager';
+import { useDynamicTabs } from './hooks/useDynamicTabs';
 import { ReadingSheet } from './components/sections/SectionComponents';
 
 // Link Manager Component
@@ -276,7 +280,10 @@ function App() {
   const [customThemeData, setCustomThemeData] = useState<any>(null);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
+  const [showSimpleColorPicker, setShowSimpleColorPicker] = useState(false);
   const { customThemes } = useCustomThemes();
+  const { undo, redo, getHistorySummary, addToHistory } = useHistoryManager();
+  const { activeTab, setActiveTab, resetTemplate } = useDynamicTabs();
   
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
@@ -326,6 +333,22 @@ function App() {
   }, [sheet]);
 
   const updateField = (field: keyof ReadingSheet, value: string) => {
+    const previousValue = sheet[field];
+    
+    // Only add to history if the value actually changed
+    if (previousValue !== value) {
+      addToHistory({
+        type: 'content',
+        description: `Modification du champ "${field}"`,
+        target: {
+          type: 'sheet',
+          id: field
+        },
+        before: { value: previousValue },
+        after: { value }
+      });
+    }
+    
     setSheet(prev => ({ ...prev, [field]: value }));
   };
 
@@ -380,6 +403,7 @@ function App() {
 
       // Get tabs from the useDynamicTabs hook - use the DEFAULT_TABS structure
       const defaultTabs = [
+        { id: 'titre', title: 'Titre', icon: '📖' },
         { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
         { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
         { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
@@ -847,6 +871,248 @@ function App() {
     setCustomThemeData(newTheme);
   };
 
+  // Main toolbar handlers
+  const handleUndo = useCallback(() => {
+    console.log('Undo button clicked');
+    const result = undo();
+    if (!result) {
+      console.warn('Undo failed or no actions to undo');
+    }
+    // Force re-render by updating sheet from localStorage
+    const savedSheet = localStorage.getItem('ficheAnalyse');
+    if (savedSheet) {
+      try {
+        const parsedSheet = JSON.parse(savedSheet);
+        setSheet(parsedSheet);
+      } catch (error) {
+        console.error('Error parsing saved sheet:', error);
+      }
+    }
+  }, [undo]);
+
+  const handleRedo = useCallback(() => {
+    console.log('Redo button clicked');
+    const result = redo();
+    if (!result) {
+      console.warn('Redo failed or no actions to redo');
+    }
+    // Force re-render by updating sheet from localStorage
+    const savedSheet = localStorage.getItem('ficheAnalyse');
+    if (savedSheet) {
+      try {
+        const parsedSheet = JSON.parse(savedSheet);
+        setSheet(parsedSheet);
+      } catch (error) {
+        console.error('Error parsing saved sheet:', error);
+      }
+    }
+  }, [redo]);
+
+  const handleAddTextZone = useCallback(() => {
+    // Check if we're on a default tab - if so, switch to custom zones tab
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      // Wait for tab to load, then trigger zone creation
+      setTimeout(() => {
+        triggerZoneCreation('text');
+      }, 200);
+    } else {
+      // Already on custom zones tab, trigger immediately
+      triggerZoneCreation('text');
+    }
+  }, [activeTab, setActiveTab]);
+
+  const handleAddImportZone = useCallback(() => {
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      setTimeout(() => {
+        triggerZoneCreation('import');
+      }, 200);
+    } else {
+      triggerZoneCreation('import');
+    }
+  }, [activeTab, setActiveTab]);
+
+  const handleAddCitationZone = useCallback(() => {
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      setTimeout(() => {
+        triggerZoneCreation('citation');
+      }, 200);
+    } else {
+      triggerZoneCreation('citation');
+    }
+  }, [activeTab, setActiveTab]);
+
+  const handleAddNotesZone = useCallback(() => {
+    if (activeTab !== 'custom-zones-main') {
+      setActiveTab('custom-zones-main');
+      setTimeout(() => {
+        triggerZoneCreation('notes');
+      }, 200);
+    } else {
+      triggerZoneCreation('notes');
+    }
+  }, [activeTab, setActiveTab]);
+
+  // Helper function to trigger zone creation
+  const triggerZoneCreation = (zoneType: string) => {
+    try {
+      // First, try to find and click the add zone button
+      const addZoneButton = document.querySelector('[data-testid="add-zone-button"]');
+      if (addZoneButton) {
+        (addZoneButton as HTMLElement).click();
+        // Wait for dropdown to appear, then select zone type
+        setTimeout(() => {
+          const zoneTypeButton = document.querySelector(`[data-zone-type="${zoneType}"]`);
+          if (zoneTypeButton) {
+            (zoneTypeButton as HTMLElement).click();
+          }
+        }, 100);
+      } else {
+        console.warn('Add zone button not found');
+      }
+    } catch (error) {
+      console.error('Error triggering zone creation:', error);
+    }
+  };
+
+  const handleAddTab = useCallback(() => {
+    // Find and click the add tab button
+    const addTabButton = document.querySelector('[data-testid="add-tab-button"]');
+    if (addTabButton) {
+      (addTabButton as HTMLElement).click();
+    }
+  }, []);
+
+  const handleOpenColorPicker = useCallback(() => {
+    setShowSimpleColorPicker(true);
+  }, []);
+
+  const handleResetTemplate = useCallback(() => {
+    resetTemplate();
+  }, [resetTemplate]);
+
+  const handleColorChange = useCallback((color: string) => {
+    const previousTheme = currentTheme;
+    const previousCustomThemeData = customThemeData;
+    
+    // Apply the selected color to the current theme
+    if (currentTheme !== 'custom') {
+      // Create a custom theme based on the current theme with the new color
+      const baseTheme = themes[currentTheme as keyof typeof themes];
+      const customTheme = {
+        ...baseTheme,
+        id: `custom-${Date.now()}`,
+        name: `Personnalisé (${color})`,
+        primary: color,
+        secondary: adjustColorBrightness(color, -0.1),
+        accent: adjustColorBrightness(color, 0.1),
+        gradient: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(color, -0.1)} 100%)`
+      };
+      
+      // Track theme change in history
+      addToHistory({
+        type: 'theme',
+        description: `Changement de couleur vers ${color}`,
+        target: {
+          type: 'app',
+          id: 'theme'
+        },
+        before: { theme: previousTheme, customThemeData: previousCustomThemeData },
+        after: { theme: 'custom', customThemeData: customTheme }
+      });
+      
+      setCustomThemeData(customTheme);
+      setCurrentTheme('custom');
+    } else if (customThemeData) {
+      // Update existing custom theme
+      const updatedTheme = {
+        ...customThemeData,
+        primary: color,
+        secondary: adjustColorBrightness(color, -0.1),
+        accent: adjustColorBrightness(color, 0.1),
+        gradient: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(color, -0.1)} 100%)`
+      };
+      
+      // Track theme change in history
+      addToHistory({
+        type: 'theme',
+        description: `Changement de couleur vers ${color}`,
+        target: {
+          type: 'app',
+          id: 'theme'
+        },
+        before: { theme: previousTheme, customThemeData: previousCustomThemeData },
+        after: { theme: 'custom', customThemeData: updatedTheme }
+      });
+      
+      setCustomThemeData(updatedTheme);
+    }
+  }, [currentTheme, customThemeData, addToHistory]);
+
+  // Helper function to adjust color brightness
+  const adjustColorBrightness = (color: string, percent: number) => {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent * 100);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  };
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts if no input is focused
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' || 
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.getAttribute('contenteditable') === 'true'
+      );
+      
+      if (!isInputFocused && (e.ctrlKey || e.metaKey)) {
+        switch (e.key.toLowerCase()) {
+          case 'z':
+            if (e.shiftKey) {
+              e.preventDefault();
+              console.log('Redo shortcut triggered');
+              handleRedo();
+            } else {
+              e.preventDefault();
+              console.log('Undo shortcut triggered');
+              handleUndo();
+            }
+            break;
+          case 'y':
+            e.preventDefault();
+            console.log('Redo shortcut triggered');
+            handleRedo();
+            break;
+        }
+      }
+    };
+
+    // Theme restore handler
+    const handleThemeRestore = (event: any) => {
+      if (event.detail && event.detail.theme) {
+        setCurrentTheme(event.detail.theme);
+        setCustomThemeData(event.detail.customThemeData);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('theme-restore', handleThemeRestore);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('theme-restore', handleThemeRestore);
+    };
+  }, [handleUndo, handleRedo]);
+
   const exportToWord = async () => {
     try {
       // Create a simple HTML structure for Word export
@@ -1045,6 +1311,7 @@ function App() {
       // Get tabs from the useDynamicTabs hook - we need to access the actual tab data
       // For now, we'll use the default tabs structure
       const defaultTabs = [
+        { id: 'titre', title: 'Titre', icon: '📖' },
         { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
         { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
         { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
@@ -1320,9 +1587,44 @@ function App() {
     };
     
     switch (tabId) {
-      case 'resume-architecture':
+      case 'titre':
         contentDiv.appendChild(createPDFSection('Titre de l\'œuvre', sheet.titre || 'Non renseigné', true));
-        contentDiv.appendChild(createPDFSection('Auteur', sheet.auteur || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Auteur', sheet.auteur || 'Non renseigné', true));
+        
+        // Add informations complémentaires section
+        const infoSection = document.createElement('div');
+        infoSection.className = 'pdf-section';
+        infoSection.style.marginBottom = '25px';
+        infoSection.style.padding = '20px';
+        infoSection.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        infoSection.style.borderRadius = '8px';
+        infoSection.style.border = `1px solid ${theme.border || '#e9ecef'}`;
+        infoSection.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        
+        const infoTitle = document.createElement('h3');
+        infoTitle.className = 'pdf-section-title';
+        infoTitle.style.color = theme.primary || '#667eea';
+        infoTitle.style.marginBottom = '15px';
+        infoTitle.style.fontSize = '16px';
+        infoTitle.style.fontWeight = 'bold';
+        infoTitle.style.fontFamily = theme.titleFont || 'Arial, sans-serif';
+        infoTitle.style.borderBottom = `2px solid ${theme.primary || '#667eea'}`;
+        infoTitle.style.paddingBottom = '8px';
+        infoTitle.textContent = 'Informations de l\'œuvre';
+        
+        const infoContent = document.createElement('div');
+        infoContent.className = 'pdf-section-content';
+        infoContent.style.color = theme.text || '#000000';
+        infoContent.style.fontSize = '13px';
+        infoContent.style.lineHeight = '1.6';
+        infoContent.style.fontFamily = theme.textFont || 'Arial, sans-serif';
+        infoContent.textContent = 'Titre et auteur principaux de l\'œuvre étudiée';
+        
+        infoSection.appendChild(infoTitle);
+        infoSection.appendChild(infoContent);
+        contentDiv.appendChild(infoSection);
+        break;
+      case 'resume-architecture':
         contentDiv.appendChild(createPDFSection('Résumé détaillé', sheet.resume || 'Non renseigné', true));
         contentDiv.appendChild(createPDFSection('Plan narratif / Architecture', sheet.plan || 'Non renseigné'));
         contentDiv.appendChild(createPDFSection('Temporalités', sheet.temporalites || 'Non renseigné'));
@@ -1568,9 +1870,12 @@ function App() {
     };
     
     switch (tabId) {
-      case 'resume-architecture':
+      case 'titre':
         contentDiv.appendChild(createStyledSection('Titre de l\'œuvre', sheet.titre || 'Non renseigné', true));
-        contentDiv.appendChild(createStyledSection('Auteur', sheet.auteur || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Auteur', sheet.auteur || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Informations générales', 'Titre et auteur principaux de l\'œuvre étudiée'));
+        break;
+      case 'resume-architecture':
         contentDiv.appendChild(createStyledSection('Résumé détaillé', sheet.resume || 'Non renseigné', true));
         contentDiv.appendChild(createStyledSection('Plan narratif / Architecture', sheet.plan || 'Non renseigné'));
         contentDiv.appendChild(createStyledSection('Temporalités', sheet.temporalites || 'Non renseigné'));
@@ -1715,6 +2020,15 @@ function App() {
       {currentTheme === 'bulletJournal' && <BulletDecorations theme={theme} />}
       {currentTheme === 'livreVintage' && <VintageDecorations theme={theme} />}
 
+      {/* Simple Color Picker */}
+      {showSimpleColorPicker && (
+        <SimpleColorPicker
+          onColorChange={handleColorChange}
+          onClose={() => setShowSimpleColorPicker(false)}
+          currentColor={theme.primary}
+        />
+      )}
+
       {/* Theme Controls */}
       {isThemeSelectorOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setIsThemeSelectorOpen(false)}>
@@ -1829,6 +2143,22 @@ function App() {
                sheet.titre || 'Titre de l\'œuvre à saisir'}
             </h2>
         </div>
+
+        {/* Main Toolbar */}
+        <MainToolbar
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onAddTextZone={handleAddTextZone}
+          onAddImportZone={handleAddImportZone}
+          onAddCitationZone={handleAddCitationZone}
+          onAddNotesZone={handleAddNotesZone}
+          onAddTab={handleAddTab}
+          onOpenColorPicker={handleOpenColorPicker}
+          onResetTemplate={handleResetTemplate}
+          canUndo={getHistorySummary().canUndo}
+          canRedo={getHistorySummary().canRedo}
+          theme={theme}
+        />
 
         {/* Content */}
         <div className="p-10">
@@ -1955,6 +2285,7 @@ function App() {
             addCitation={addCitation}
             removeCitation={removeCitation}
             theme={theme}
+            activeTab={activeTab}
             onTabsChange={(newTabs) => {
               // Handle tab changes if needed
             }}

@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 
 export interface HistoryAction {
   id: string;
-  type: 'create' | 'delete' | 'move' | 'resize' | 'content' | 'rename' | 'color' | 'restore';
+  type: 'create' | 'delete' | 'move' | 'resize' | 'content' | 'rename' | 'color' | 'restore' | 'theme' | 'customization';
   timestamp: number;
   description: string;
   target?: {
-    type: 'zone' | 'sheet' | 'tab';
+    type: 'zone' | 'sheet' | 'tab' | 'theme' | 'app';
     id: string;
   };
   before?: any;
@@ -19,6 +19,8 @@ export interface HistoryState {
   customZones?: any[];
   tabs?: any[];
   zoneCustomizations?: any;
+  theme?: any;
+  customThemes?: any[];
 }
 
 const MAX_HISTORY_SIZE = 100;
@@ -62,12 +64,14 @@ export const useHistoryManager = () => {
     const customZones = localStorage.getItem('customZones');
     const tabs = localStorage.getItem('ficheAnalyseTabs');
     const zoneCustomizations = localStorage.getItem('zoneCustomizations');
+    const customThemes = localStorage.getItem('customThemes');
 
     return {
       sheet: sheet ? JSON.parse(sheet) : null,
       customZones: customZones ? JSON.parse(customZones) : [],
       tabs: tabs ? JSON.parse(tabs) : [],
-      zoneCustomizations: zoneCustomizations ? JSON.parse(zoneCustomizations) : {}
+      zoneCustomizations: zoneCustomizations ? JSON.parse(zoneCustomizations) : {},
+      customThemes: customThemes ? JSON.parse(customThemes) : []
     };
   };
 
@@ -107,6 +111,7 @@ export const useHistoryManager = () => {
     });
 
     console.log('Action added to history:', newAction);
+    console.log('New history state:', { historyLength: history.length + 1, currentIndex: currentIndex + 1 });
   };
 
   // Undo operation
@@ -218,6 +223,28 @@ export const useHistoryManager = () => {
               customZones[zoneIndex].isVisible = false;
               customZones[zoneIndex].updatedAt = new Date().toISOString();
               localStorage.setItem('customZones', JSON.stringify(customZones));
+            }
+          }
+          break;
+
+        case 'theme':
+          // Restore previous theme
+          if (action.before && action.target?.type === 'app') {
+            // This would need to be handled by the App component
+            // We'll dispatch a custom event to notify the app
+            window.dispatchEvent(new CustomEvent('theme-restore', { 
+              detail: { theme: action.before.theme, customThemeData: action.before.customThemeData } 
+            }));
+          }
+          break;
+
+        case 'customization':
+          // Restore previous customization
+          if (action.before && action.target?.type === 'zone') {
+            const zoneCustomizations = JSON.parse(localStorage.getItem('zoneCustomizations') || '{}');
+            if (action.target.id) {
+              zoneCustomizations[action.target.id] = action.before.customization;
+              localStorage.setItem('zoneCustomizations', JSON.stringify(zoneCustomizations));
             }
           }
           break;
@@ -346,6 +373,27 @@ export const useHistoryManager = () => {
               customZones[zoneIndex].isVisible = true;
               customZones[zoneIndex].updatedAt = new Date().toISOString();
               localStorage.setItem('customZones', JSON.stringify(customZones));
+            }
+          }
+          break;
+
+        case 'theme':
+          // Re-apply theme change
+          if (action.after && action.target?.type === 'app') {
+            // Dispatch custom event to notify the app
+            window.dispatchEvent(new CustomEvent('theme-restore', { 
+              detail: { theme: action.after.theme, customThemeData: action.after.customThemeData } 
+            }));
+          }
+          break;
+
+        case 'customization':
+          // Re-apply customization change
+          if (action.after && action.target?.type === 'zone') {
+            const zoneCustomizations = JSON.parse(localStorage.getItem('zoneCustomizations') || '{}');
+            if (action.target.id) {
+              zoneCustomizations[action.target.id] = action.after.customization;
+              localStorage.setItem('zoneCustomizations', JSON.stringify(zoneCustomizations));
             }
           }
           break;

@@ -11,60 +11,67 @@ export interface TabData {
 
 const DEFAULT_TABS: TabData[] = [
   {
+    id: 'titre',
+    title: 'Titre',
+    icon: '📖',
+    isDefault: true,
+    order: 1
+  },
+  {
     id: 'resume-architecture',
     title: 'Résumé & Architecture',
     icon: '📘',
     isDefault: true,
-    order: 1
+    order: 2
   },
   {
     id: 'analyse-stylistique',
     title: 'Analyse stylistique',
     icon: '🖋️',
     isDefault: true,
-    order: 2
+    order: 3
   },
   {
     id: 'problematiques-enjeux',
     title: 'Problématiques & Enjeux',
     icon: '🧠',
     isDefault: true,
-    order: 3
+    order: 4
   },
   {
     id: 'images-oeuvre',
     title: 'Images dans l\'œuvre',
     icon: '🖼️',
     isDefault: true,
-    order: 4
+    order: 5
   },
   {
     id: 'contexte-perspectives',
     title: 'Contexte & Perspectives',
     icon: '🔍',
     isDefault: true,
-    order: 5
+    order: 6
   },
   {
     id: 'comparatisme',
     title: 'Comparatisme',
     icon: '🔄',
     isDefault: true,
-    order: 6
+    order: 7
   },
   {
     id: 'annexes',
     title: 'Annexes',
     icon: '📂',
     isDefault: true,
-    order: 7
+    order: 8
   },
   {
     id: 'custom-zones-main',
     title: 'Zones personnalisées',
     icon: '🎨',
     isDefault: true,
-    order: 8
+    order: 9
   }
 ];
 
@@ -170,6 +177,24 @@ export const useDynamicTabs = () => {
     }
   };
 
+  const resetTemplate = () => {
+    if (window.confirm('Êtes-vous sûr de vouloir réinitialiser complètement le template ? Toutes les données seront perdues.')) {
+      // Clear all localStorage data
+      localStorage.removeItem('ficheAnalyse');
+      localStorage.removeItem('customZones');
+      localStorage.removeItem('ficheAnalyseTabs');
+      localStorage.removeItem('zoneCustomizations');
+      localStorage.removeItem('ficheHistoryStack');
+      localStorage.removeItem('customThemes');
+      
+      // Reset tabs to default
+      initializeDefaultTabs();
+      
+      // Trigger a full page reload to reset everything
+      window.location.reload();
+    }
+  };
+
   return {
     tabs,
     activeTab,
@@ -179,6 +204,7 @@ export const useDynamicTabs = () => {
     updateTab,
     reorderTabs,
     getActiveTabData,
-    resetToDefault
+    resetToDefault,
+    resetTemplate
   };
 };
