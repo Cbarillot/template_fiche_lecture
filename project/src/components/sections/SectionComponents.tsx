@@ -130,6 +130,148 @@ const ImageUploadZone = ({ label }: { label: string }) => {
   );
 };
 
+// Section 0: Titre
+export const TitreSection: React.FC<SectionProps> = ({ 
+  sheet, 
+  updateField, 
+  theme, 
+  zoneCustomizations, 
+  onUpdateZoneCustomization, 
+  onDeleteZone, 
+  onRestoreZone 
+}) => (
+  <div className="space-y-6">
+    <div className="text-center mb-8">
+      <h2 className="text-2xl font-bold mb-2" style={{ color: theme.primary }}>
+        📖 Informations générales
+      </h2>
+      <p className="text-gray-600">
+        Renseignez les informations de base de l'œuvre étudiée
+      </p>
+    </div>
+    
+    <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <ZoneContainer
+        zoneId="titre"
+        defaultLabel="Titre de l'œuvre"
+        customization={zoneCustomizations.titre}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <input
+          type="text"
+          value={sheet.titre}
+          onChange={(e) => updateField('titre', e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 text-lg font-medium"
+          style={{
+            backgroundColor: zoneCustomizations.titre?.backgroundColor || '#ffffff',
+            borderColor: theme.border,
+            color: theme.text,
+            opacity: 1
+          }}
+          placeholder="Titre de l'œuvre"
+        />
+      </ZoneContainer>
+      
+      <ZoneContainer
+        zoneId="auteur"
+        defaultLabel="Auteur·ice / Édition utilisée"
+        customization={zoneCustomizations.auteur}
+        onUpdateCustomization={onUpdateZoneCustomization}
+        onDeleteZone={onDeleteZone}
+        onRestoreZone={onRestoreZone}
+      >
+        <input
+          type="text"
+          value={sheet.auteur}
+          onChange={(e) => updateField('auteur', e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-opacity-50 text-lg font-medium"
+          style={{
+            backgroundColor: zoneCustomizations.auteur?.backgroundColor || '#ffffff',
+            borderColor: theme.border,
+            color: theme.text,
+            opacity: 1
+          }}
+          placeholder="Auteur et édition"
+        />
+      </ZoneContainer>
+    </div>
+
+    <div className="mb-6">
+      <label className="block text-sm font-bold mb-3" style={{ color: theme.textLight }}>
+        Image de couverture ou portrait d'auteur
+      </label>
+      <ImageUploadZone label="une image de couverture" />
+    </div>
+
+    <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <div className="space-y-4">
+        <label className="block text-sm font-bold" style={{ color: theme.textLight }}>
+          Informations complémentaires
+        </label>
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <label className="block font-medium text-gray-700">Genre littéraire</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md mt-1"
+                placeholder="Roman, théâtre, poésie..."
+                style={{ borderColor: theme.border }}
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700">Date de publication</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md mt-1"
+                placeholder="Année"
+                style={{ borderColor: theme.border }}
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700">Nombre de pages</label>
+              <input
+                type="number"
+                className="w-full px-3 py-2 border rounded-md mt-1"
+                placeholder="Pages"
+                style={{ borderColor: theme.border }}
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700">Maison d'édition</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md mt-1"
+                placeholder="Éditeur"
+                style={{ borderColor: theme.border }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <label className="block text-sm font-bold" style={{ color: theme.textLight }}>
+          Première impression
+        </label>
+        <textarea
+          rows={6}
+          className="w-full px-4 py-3 rounded-lg border resize-vertical transition-all duration-200 focus:ring-2 focus:ring-opacity-50"
+          style={{
+            backgroundColor: '#ffffff',
+            borderColor: theme.border,
+            color: theme.text,
+            opacity: 1
+          }}
+          placeholder="Notez vos premières impressions de lecture..."
+        />
+      </div>
+    </div>
+  </div>
+);
+
 // Section 1: Résumé & Architecture
 export const ResumeArchitectureSection: React.FC<SectionProps> = ({ 
   sheet, 

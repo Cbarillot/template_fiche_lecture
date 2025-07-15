@@ -283,7 +283,7 @@ function App() {
   const [showSimpleColorPicker, setShowSimpleColorPicker] = useState(false);
   const { customThemes } = useCustomThemes();
   const { undo, redo, getHistorySummary, addToHistory } = useHistoryManager();
-  const { activeTab, setActiveTab } = useDynamicTabs();
+  const { activeTab, setActiveTab, resetTemplate } = useDynamicTabs();
   
   const [sheet, setSheet] = useState<ReadingSheet>({
     titre: '',
@@ -403,6 +403,7 @@ function App() {
 
       // Get tabs from the useDynamicTabs hook - use the DEFAULT_TABS structure
       const defaultTabs = [
+        { id: 'titre', title: 'Titre', icon: '📖' },
         { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
         { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
         { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
@@ -988,7 +989,14 @@ function App() {
     setShowSimpleColorPicker(true);
   }, []);
 
+  const handleResetTemplate = useCallback(() => {
+    resetTemplate();
+  }, [resetTemplate]);
+
   const handleColorChange = useCallback((color: string) => {
+    const previousTheme = currentTheme;
+    const previousCustomThemeData = customThemeData;
+    
     // Apply the selected color to the current theme
     if (currentTheme !== 'custom') {
       // Create a custom theme based on the current theme with the new color
@@ -1002,6 +1010,19 @@ function App() {
         accent: adjustColorBrightness(color, 0.1),
         gradient: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(color, -0.1)} 100%)`
       };
+      
+      // Track theme change in history
+      addToHistory({
+        type: 'theme',
+        description: `Changement de couleur vers ${color}`,
+        target: {
+          type: 'app',
+          id: 'theme'
+        },
+        before: { theme: previousTheme, customThemeData: previousCustomThemeData },
+        after: { theme: 'custom', customThemeData: customTheme }
+      });
+      
       setCustomThemeData(customTheme);
       setCurrentTheme('custom');
     } else if (customThemeData) {
@@ -1013,9 +1034,22 @@ function App() {
         accent: adjustColorBrightness(color, 0.1),
         gradient: `linear-gradient(135deg, ${color} 0%, ${adjustColorBrightness(color, -0.1)} 100%)`
       };
+      
+      // Track theme change in history
+      addToHistory({
+        type: 'theme',
+        description: `Changement de couleur vers ${color}`,
+        target: {
+          type: 'app',
+          id: 'theme'
+        },
+        before: { theme: previousTheme, customThemeData: previousCustomThemeData },
+        after: { theme: 'custom', customThemeData: updatedTheme }
+      });
+      
       setCustomThemeData(updatedTheme);
     }
-  }, [currentTheme, customThemeData]);
+  }, [currentTheme, customThemeData, addToHistory]);
 
   // Helper function to adjust color brightness
   const adjustColorBrightness = (color: string, percent: number) => {
@@ -1062,8 +1096,21 @@ function App() {
       }
     };
 
+    // Theme restore handler
+    const handleThemeRestore = (event: any) => {
+      if (event.detail && event.detail.theme) {
+        setCurrentTheme(event.detail.theme);
+        setCustomThemeData(event.detail.customThemeData);
+      }
+    };
+
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('theme-restore', handleThemeRestore);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('theme-restore', handleThemeRestore);
+    };
   }, [handleUndo, handleRedo]);
 
   const exportToWord = async () => {
@@ -1264,6 +1311,7 @@ function App() {
       // Get tabs from the useDynamicTabs hook - we need to access the actual tab data
       // For now, we'll use the default tabs structure
       const defaultTabs = [
+        { id: 'titre', title: 'Titre', icon: '📖' },
         { id: 'resume-architecture', title: 'Résumé & Architecture', icon: '📘' },
         { id: 'analyse-stylistique', title: 'Analyse stylistique', icon: '🖋️' },
         { id: 'problematiques-enjeux', title: 'Problématiques & Enjeux', icon: '🧠' },
@@ -1539,9 +1587,44 @@ function App() {
     };
     
     switch (tabId) {
-      case 'resume-architecture':
+      case 'titre':
         contentDiv.appendChild(createPDFSection('Titre de l\'œuvre', sheet.titre || 'Non renseigné', true));
-        contentDiv.appendChild(createPDFSection('Auteur', sheet.auteur || 'Non renseigné'));
+        contentDiv.appendChild(createPDFSection('Auteur', sheet.auteur || 'Non renseigné', true));
+        
+        // Add informations complémentaires section
+        const infoSection = document.createElement('div');
+        infoSection.className = 'pdf-section';
+        infoSection.style.marginBottom = '25px';
+        infoSection.style.padding = '20px';
+        infoSection.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        infoSection.style.borderRadius = '8px';
+        infoSection.style.border = `1px solid ${theme.border || '#e9ecef'}`;
+        infoSection.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        
+        const infoTitle = document.createElement('h3');
+        infoTitle.className = 'pdf-section-title';
+        infoTitle.style.color = theme.primary || '#667eea';
+        infoTitle.style.marginBottom = '15px';
+        infoTitle.style.fontSize = '16px';
+        infoTitle.style.fontWeight = 'bold';
+        infoTitle.style.fontFamily = theme.titleFont || 'Arial, sans-serif';
+        infoTitle.style.borderBottom = `2px solid ${theme.primary || '#667eea'}`;
+        infoTitle.style.paddingBottom = '8px';
+        infoTitle.textContent = 'Informations de l\'œuvre';
+        
+        const infoContent = document.createElement('div');
+        infoContent.className = 'pdf-section-content';
+        infoContent.style.color = theme.text || '#000000';
+        infoContent.style.fontSize = '13px';
+        infoContent.style.lineHeight = '1.6';
+        infoContent.style.fontFamily = theme.textFont || 'Arial, sans-serif';
+        infoContent.textContent = 'Titre et auteur principaux de l\'œuvre étudiée';
+        
+        infoSection.appendChild(infoTitle);
+        infoSection.appendChild(infoContent);
+        contentDiv.appendChild(infoSection);
+        break;
+      case 'resume-architecture':
         contentDiv.appendChild(createPDFSection('Résumé détaillé', sheet.resume || 'Non renseigné', true));
         contentDiv.appendChild(createPDFSection('Plan narratif / Architecture', sheet.plan || 'Non renseigné'));
         contentDiv.appendChild(createPDFSection('Temporalités', sheet.temporalites || 'Non renseigné'));
@@ -1787,9 +1870,12 @@ function App() {
     };
     
     switch (tabId) {
-      case 'resume-architecture':
+      case 'titre':
         contentDiv.appendChild(createStyledSection('Titre de l\'œuvre', sheet.titre || 'Non renseigné', true));
-        contentDiv.appendChild(createStyledSection('Auteur', sheet.auteur || 'Non renseigné'));
+        contentDiv.appendChild(createStyledSection('Auteur', sheet.auteur || 'Non renseigné', true));
+        contentDiv.appendChild(createStyledSection('Informations générales', 'Titre et auteur principaux de l\'œuvre étudiée'));
+        break;
+      case 'resume-architecture':
         contentDiv.appendChild(createStyledSection('Résumé détaillé', sheet.resume || 'Non renseigné', true));
         contentDiv.appendChild(createStyledSection('Plan narratif / Architecture', sheet.plan || 'Non renseigné'));
         contentDiv.appendChild(createStyledSection('Temporalités', sheet.temporalites || 'Non renseigné'));
@@ -2068,6 +2154,7 @@ function App() {
           onAddNotesZone={handleAddNotesZone}
           onAddTab={handleAddTab}
           onOpenColorPicker={handleOpenColorPicker}
+          onResetTemplate={handleResetTemplate}
           canUndo={getHistorySummary().canUndo}
           canRedo={getHistorySummary().canRedo}
           theme={theme}

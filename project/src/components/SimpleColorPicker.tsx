@@ -43,12 +43,12 @@ const SimpleColorPicker: React.FC<SimpleColorPickerProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
       <div 
-        className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+        className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">
-            🎨 Choisir une couleur
+          <h3 className="text-xl font-semibold text-gray-800">
+            🎨 Sélecteur de couleurs
           </h3>
           <button
             onClick={onClose}
@@ -59,26 +59,26 @@ const SimpleColorPicker: React.FC<SimpleColorPickerProps> = ({
         </div>
 
         {/* Color Preview */}
-        <div className="mb-4 p-4 rounded-lg border-2 border-gray-200">
-          <div className="flex items-center gap-3">
+        <div className="mb-6 p-4 rounded-lg border-2 border-gray-200">
+          <div className="flex items-center gap-4">
             <div 
-              className="w-12 h-12 rounded-full border-2 border-gray-300 shadow-inner"
+              className="w-16 h-16 rounded-full border-2 border-gray-300 shadow-inner"
               style={{ backgroundColor: selectedColor }}
             />
             <div>
-              <p className="text-sm font-medium text-gray-700">Couleur sélectionnée</p>
-              <p className="text-xs text-gray-500 font-mono">{selectedColor}</p>
+              <p className="text-base font-medium text-gray-700">Couleur sélectionnée</p>
+              <p className="text-sm text-gray-500 font-mono">{selectedColor}</p>
             </div>
           </div>
         </div>
 
         {/* Color Palette Grid */}
-        <div className="grid grid-cols-6 gap-2 mb-4">
+        <div className="grid grid-cols-6 gap-3 mb-6">
           {colorPalette.map((color, index) => (
             <button
               key={index}
               onClick={() => handleColorSelect(color)}
-              className={`w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
+              className={`w-12 h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
                 selectedColor === color 
                   ? 'border-gray-800 scale-110 shadow-lg' 
                   : 'border-gray-200 hover:border-gray-400'
@@ -90,7 +90,7 @@ const SimpleColorPicker: React.FC<SimpleColorPickerProps> = ({
         </div>
 
         {/* Custom Color Input */}
-        <div className="mb-4">
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ou saisir une couleur personnalisée :
           </label>
@@ -99,7 +99,7 @@ const SimpleColorPicker: React.FC<SimpleColorPickerProps> = ({
               type="color"
               value={selectedColor}
               onChange={(e) => handleColorSelect(e.target.value)}
-              className="w-12 h-10 rounded-lg border-2 border-gray-300 cursor-pointer"
+              className="w-14 h-12 rounded-lg border-2 border-gray-300 cursor-pointer"
             />
             <input
               type="text"
@@ -112,10 +112,10 @@ const SimpleColorPicker: React.FC<SimpleColorPickerProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-6 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Annuler
           </button>
@@ -124,7 +124,7 @@ const SimpleColorPicker: React.FC<SimpleColorPickerProps> = ({
               onColorChange(selectedColor);
               onClose();
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Appliquer
           </button>

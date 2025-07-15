@@ -9,7 +9,8 @@ import {
   Plus, 
   Palette,
   RotateCcw,
-  RotateCw
+  RotateCw,
+  RefreshCw
 } from 'lucide-react';
 
 interface MainToolbarProps {
@@ -21,6 +22,7 @@ interface MainToolbarProps {
   onAddNotesZone: () => void;
   onAddTab: () => void;
   onOpenColorPicker: () => void;
+  onResetTemplate: () => void;
   canUndo: boolean;
   canRedo: boolean;
   theme: any;
@@ -35,6 +37,7 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
   onAddNotesZone,
   onAddTab,
   onOpenColorPicker,
+  onResetTemplate,
   canUndo,
   canRedo,
   theme
@@ -59,7 +62,7 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
 
   return (
     <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 py-3">
+      <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Left side - Undo/Redo */}
           <div className="flex items-center gap-2">
@@ -82,13 +85,21 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
               </button>
             </div>
             <div className="h-8 w-px bg-gray-300 mx-2" />
+            <button
+              onClick={onResetTemplate}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+              title="Réinitialiser le template"
+            >
+              <RefreshCw size={16} />
+              <span className="hidden sm:inline text-sm">Reset</span>
+            </button>
           </div>
 
           {/* Center - Zone Creation Buttons */}
           <div className="flex items-center gap-2 flex-1 justify-center">
             <button
               onClick={onAddTextZone}
-              className={buttonClass()}
+              className={`${buttonClass()} min-w-[140px]`}
               title="Ajouter une zone de texte"
             >
               <FileText size={16} />
@@ -96,7 +107,7 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
             </button>
             <button
               onClick={onAddImportZone}
-              className={buttonClass()}
+              className={`${buttonClass()} min-w-[120px]`}
               title="Ajouter une zone d'importation"
             >
               <FolderOpen size={16} />
@@ -104,7 +115,7 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
             </button>
             <button
               onClick={onAddCitationZone}
-              className={buttonClass()}
+              className={`${buttonClass()} min-w-[120px]`}
               title="Ajouter une zone de citation"
             >
               <Quote size={16} />
@@ -112,7 +123,7 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
             </button>
             <button
               onClick={onAddNotesZone}
-              className={buttonClass()}
+              className={`${buttonClass()} min-w-[120px]`}
               title="Ajouter une zone de notes"
             >
               <StickyNote size={16} />
@@ -125,7 +136,7 @@ const MainToolbar: React.FC<MainToolbarProps> = ({
             <div className="h-8 w-px bg-gray-300 mx-2" />
             <button
               onClick={onAddTab}
-              className={buttonClass()}
+              className={`${buttonClass()} min-w-[120px]`}
               title="Ajouter un onglet"
             >
               <Plus size={16} />

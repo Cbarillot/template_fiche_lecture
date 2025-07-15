@@ -23,6 +23,7 @@ import { useZoneCustomizations } from '../hooks/useZoneCustomizations';
 import { useHistoryManager } from '../hooks/useHistoryManager';
 import {
   ReadingSheet,
+  TitreSection,
   ResumeArchitectureSection,
   AnalyseStylistiqueSection,
   ProblematiquesEnjeuxSection,
@@ -314,6 +315,8 @@ const TabManager: React.FC<TabManagerProps> = ({
     };
 
     switch (tabId) {
+      case 'titre':
+        return <TitreSection {...sectionProps} />;
       case 'resume-architecture':
         return <ResumeArchitectureSection {...sectionProps} />;
       case 'analyse-stylistique':
@@ -429,7 +432,7 @@ const TabManager: React.FC<TabManagerProps> = ({
       
       {/* Tab Sidebar */}
       <div className={`flex-shrink-0 transition-all duration-300 ${
-        isTabSidebarCollapsed ? 'lg:w-16' : 'lg:w-80'
+        isTabSidebarCollapsed ? 'lg:w-16' : 'lg:w-96'
       }`}>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-4">
